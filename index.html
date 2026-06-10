@@ -498,8 +498,8 @@ function renderOC(){
         </select>
         <div class="item-code">${it.codigo||''}</div>
       </div>
-      <input type="number" min="0" placeholder="Cant." value="${it.cantidad||''}" oninput="ocItems[${i}].cantidad=parseFloat(this.value)||0;calcTotals()">
-      <input type="number" min="0" placeholder="Precio" value="${it.precio||''}" oninput="ocItems[${i}].precio=parseFloat(this.value)||0;calcTotals()">
+      <input type="number" min="0" placeholder="Cant." value="${it.cantidad||''}" data-idx="${i}" data-field="cantidad" oninput="ocItems[parseInt(this.dataset.idx)].cantidad=parseFloat(this.value)||0;calcTotals()">
+      <input type="number" min="0" placeholder="Precio" value="${it.precio||''}" data-idx="${i}" data-field="precio" oninput="ocItems[parseInt(this.dataset.idx)].precio=parseFloat(this.value)||0;calcTotals()">
       <button class="btn-danger btn" onclick="removeItem(${i})">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
       </button>
@@ -643,6 +643,12 @@ window.removeItem = function(i){
 };
 
 function calcTotals(){
+  // Sync from DOM to avoid stale closures
+  document.querySelectorAll('.item-row input[data-field]').forEach(inp=>{
+    const idx=parseInt(inp.dataset.idx);
+    const field=inp.dataset.field;
+    if(ocItems[idx]!==undefined) ocItems[idx][field]=parseFloat(inp.value)||0;
+  });
   let sub=0;
   ocItems.forEach(it=>{ sub+=(it.cantidad||0)*(it.precio||0); });
   const iva = sub*0.05;
