@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="OC ALEN+PRO">
+<title>OC ALEN+PRO</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#ffffff;--bg2:#f7f7f5;--bg3:#f0f0ee;
+  --text:#1a1a1a;--text2:#666;--text3:#999;
+  --border:#e0e0dd;--border2:#ccc;
+  --accent:#1a1a1a;--accent2:#f0f0ee;
+  --danger:#dc2626;--dangerbg:#fef2f2;
+  --success:#16a34a;--successbg:#f0fdf4;
+  --radius:10px;--radius-sm:7px;
+  --shadow:0 1px 3px rgba(0,0,0,.08);
+}
+html,body{height:100%;background:var(--bg2);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--text);font-size:15px;line-height:1.5}
+.app{display:flex;flex-direction:column;height:100vh;max-width:600px;margin:0 auto;background:var(--bg)}
+
+/* HEADER */
+.header{background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50}
+.header-logo{font-size:17px;font-weight:600;letter-spacing:-.3px}
+.header-logo span{color:var(--text3);font-weight:400}
+.header-meta{font-size:11px;color:var(--text3);text-align:right;line-height:1.4}
+
+/* NAV */
+.nav{display:flex;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-shrink:0}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{flex:1;min-width:70px;padding:10px 6px 8px;border:none;background:transparent;color:var(--text3);font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;font-family:inherit}
+.nav-btn.active{color:var(--text);border-bottom-color:var(--text)}
+.nav-btn svg{display:block;margin:0 auto 3px;width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px}
+
+/* CARDS */
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+
+/* FIELDS */
+.field{margin-bottom:10px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:500}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);appearance:none;-webkit-appearance:none}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.field textarea{resize:vertical;min-height:72px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .15s;white-space:nowrap}
+.btn:active{background:var(--bg3)}
+.btn-primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.btn-primary:active{opacity:.85}
+.btn-danger{color:var(--danger);border-color:transparent;background:transparent;padding:8px}
+.btn-sm{padding:6px 12px;font-size:13px}
+.btn-icon{padding:8px;border:none;background:transparent;cursor:pointer;color:var(--text2)}
+.btn-block{width:100%;margin-bottom:8px}
+.btn-row{display:flex;gap:8px;margin-top:12px}
+.btn-row .btn{flex:1}
+
+/* ITEMS TABLE */
+.items-header{display:grid;grid-template-columns:1fr 80px 90px 36px;gap:6px;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:6px}
+.items-header span{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.item-row{display:grid;grid-template-columns:1fr 80px 90px 36px;gap:6px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)}
+.item-row:last-child{border-bottom:none}
+.item-row input,.item-row select{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);width:100%}
+.item-prod{display:flex;flex-direction:column;gap:4px}
+.item-code{font-size:11px;color:var(--text3)}
+
+/* TOTALS */
+.totals{background:var(--bg2);border-radius:var(--radius-sm);padding:12px;margin-top:4px}
+.totals-row{display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:var(--text2)}
+.totals-row.main{font-size:17px;font-weight:600;color:var(--text);border-top:1px solid var(--border);margin-top:6px;padding-top:8px}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--text3);fill:none;stroke-width:2;pointer-events:none}
+.search-input{width:100%;padding:10px 12px 10px 36px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:15px;font-family:inherit;background:var(--bg);color:var(--text)}
+.search-input:focus{outline:none;border-color:var(--accent)}
+
+/* LIST ITEMS */
+.list-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer;transition:background .1s}
+.list-item:active{background:var(--bg2)}
+.list-item-main{flex:1;min-width:0}
+.list-item-name{font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-item-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.list-item-actions{display:flex;gap:4px;flex-shrink:0;margin-left:8px}
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:100px;background:var(--bg3);color:var(--text2)}
+.badge-oc{background:#eff6ff;color:#1d4ed8}
+
+/* HIST ROW */
+.hist-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px}
+.hist-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.hist-empresa{font-weight:500;font-size:14px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-right:8px}
+.hist-total{font-weight:600;font-size:14px}
+.hist-detail{font-size:12px;color:var(--text3);line-height:1.6}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px 32px;width:100%;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:17px;font-weight:600;margin-bottom:16px}
+.modal-footer{display:flex;gap:8px;margin-top:16px}
+.modal-footer .btn{flex:1}
+
+/* PREVIEW */
+.preview{font-size:12px;line-height:1.6}
+.preview-header{border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:10px}
+.preview-logo{font-size:16px;font-weight:700;margin-bottom:2px}
+.preview-section{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.preview-box{border:1px solid var(--border);border-radius:6px;padding:8px;font-size:11px;line-height:1.6}
+.preview-box strong{display:block;font-size:10px;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
+.preview-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px}
+.preview-table th{text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);padding:5px 4px}
+.preview-table td{padding:5px 4px;border-bottom:1px solid var(--border)}
+.preview-totals{text-align:right;font-size:12px}
+.preview-totals div{display:flex;justify-content:flex-end;gap:16px;padding:2px 0}
+.preview-totals .main-total{font-weight:700;font-size:14px;border-top:1px solid var(--border);margin-top:4px;padding-top:6px}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty svg{width:40px;height:40px;stroke:var(--border2);fill:none;stroke-width:1.5;margin:0 auto 12px;display:block}
+.empty p{font-size:14px}
+
+/* LOADING */
+.loading{text-align:center;padding:40px;color:var(--text3);font-size:14px}
+.spinner{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:var(--bg);padding:10px 20px;border-radius:100px;font-size:13px;font-weight:500;z-index:200;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* COPY BTN */
+.copy-btn{font-size:12px;color:var(--text3);border:none;background:none;cursor:pointer;padding:4px 0;font-family:inherit}
+
+@media print{
+  .header,.nav,.btn-row,.btn,.modal-overlay,.toast{display:none!important}
+  .content{padding:0}
+  .card{border:none;box-shadow:none;margin:0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-logo">ALEN<span>+PRO</span></div>
+    <div class="header-meta">NIT: 800.183.642-5<br>comercial@alenpro.co</div>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-btn active" onclick="switchTab('oc')" id="tab-oc">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Nueva OC
+    </button>
+    <button class="nav-btn" onclick="switchTab('historico')" id="tab-historico">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Histórico
+    </button>
+    <button class="nav-btn" onclick="switchTab('clientes')" id="tab-clientes">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Clientes
+    </button>
+    <button class="nav-btn" onclick="switchTab('productos')" id="tab-productos">
+      <svg viewBox="0 0 24 24"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      Productos
+    </button>
+  </nav>
+
+  <div class="content" id="content">
+    <div class="loading"><div class="spinner"></div>Conectando...</div>
+  </div>
+</div>
+
+<!-- MODAL CLIENTE -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mc-title">Nuevo cliente</div>
+    <input type="hidden" id="mc-key">
+    <div class="field"><label>Empresa *</label><input id="mc-empresa" type="text" placeholder="Nombre de la empresa"></div>
+    <div class="grid2">
+      <div class="field"><label>Ciudad</label><input id="mc-ciudad" type="text"></div>
+      <div class="field"><label>NIT</label><input id="mc-nit" type="text"></div>
+    </div>
+    <div class="field"><label>Dirección</label><input id="mc-dir" type="text"></div>
+    <div class="grid2">
+      <div class="field"><label>Teléfono</label><input id="mc-tel" type="tel"></div>
+      <div class="field"><label>Email</label><input id="mc-email" type="email"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-cliente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCliente()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRODUCTO -->
+<div class="modal-overlay" id="modal-producto">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mp-title">Nuevo producto</div>
+    <input type="hidden" id="mp-key">
+    <div class="field"><label>Código *</label><input id="mp-codigo" type="text" placeholder="Ej: PTSG"></div>
+    <div class="field"><label>Artículo *</label><input id="mp-articulo" type="text"></div>
+    <div class="field"><label>Precio (COP)</label><input id="mp-precio" type="number" min="0" placeholder="0"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-producto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProducto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PREVIEW -->
+<div class="modal-overlay" id="modal-preview">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="preview-content" class="preview"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-preview')">Cerrar</button>
+      <button class="btn btn-primary" onclick="window.print()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Imprimir / PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, push, onValue, remove, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB7KbW_QX-ymuRxwNh9byx6hICLEUcRpKE",
+  authDomain: "alenpro-inventario.firebaseapp.com",
+  databaseURL: "https://alenpro-inventario-default-rtdb.firebaseio.com",
+  projectId: "alenpro-inventario",
+  storageBucket: "alenpro-inventario.firebasestorage.app",
+  messagingSenderId: "507355294371",
+  appId: "1:507355294371:web:d0e14685a8a550400bed16"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ─── STATE ───────────────────────────────────────────────
+let clientes = {};
+let productos = {};
+let historico = {};
+let ocItems = [];
+let currentTab = 'oc';
+let editingClienteKey = null;
+let editingProductoKey = null;
+
+// ─── HELPERS ─────────────────────────────────────────────
+const fmt = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}).format(n||0);
+const fmtNum = n => new Intl.NumberFormat('es-CO').format(n||0);
+const today = () => new Date().toISOString().split('T')[0];
+
+function toast(msg, dur=2200){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+window.closeModal = closeModal;
+
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('open'); });
+});
+
+// ─── FIREBASE LOAD ───────────────────────────────────────
+function initData(){
+  // Clientes
+  onValue(ref(db,'oc_clientes'), snap=>{
+    clientes = snap.val() || {};
+    if(currentTab==='clientes') renderClientes();
+    updateClienteSelect();
+  });
+  // Productos
+  onValue(ref(db,'oc_productos'), snap=>{
+    productos = snap.val() || {};
+    if(currentTab==='productos') renderProductos();
+    if(currentTab==='oc') renderOC();
+  });
+  // Historico
+  onValue(ref(db,'oc_historico'), snap=>{
+    historico = snap.val() || {};
+    if(currentTab==='historico') renderHistorico();
+  });
+  // Seed si vacío
+  setTimeout(()=>{
+    get(ref(db,'oc_clientes')).then(s=>{
+      if(!s.exists()) seedClientes();
+    });
+    get(ref(db,'oc_productos')).then(s=>{
+      if(!s.exists()) seedProductos();
+    });
+    get(ref(db,'oc_historico')).then(s=>{
+      if(!s.exists()) seedHistorico();
+    });
+  }, 1000);
+}
+
+// ─── SEED DATA ───────────────────────────────────────────
+function seedClientes(){
+  const lista = [
+    {empresa:"ABURRÁ",dir:"Cl 100 sur # 45-345 Bod#201-202",ciudad:"LA ESTRELLA",tel:"3116095696",email:"compras@aburra.com",nit:""},
+    {empresa:"AGRICOLA COLOMBIANA SA",dir:"CR 100 16 20 OF 801 ED AV 100",ciudad:"CALI",tel:"3333445",email:"compras@agricol.com.co",nit:""},
+    {empresa:"AGRICOLA DEL ALTO SAS",dir:"VDA LAGUNETA KM 14 VIA PEREIRA ARMENIA",ciudad:"PEREIRA",tel:"3214954450",email:"agricoladelalto@hotmail.com",nit:""},
+    {empresa:"AGROHACIENDA LA MARTINA",dir:"",ciudad:"",tel:"",email:"",nit:""},
+    {empresa:"AGROINDUSTRIA SANTA MARIA SAS",dir:"CRR LOS CHANCOS",ciudad:"SAN PEDRO",tel:"2-2261314",email:"avsantamaria02@gmail.com",nit:""},
+    {empresa:"AGROINSUMOS SAS",dir:"CL 13 56 20 ZARAGOZA",ciudad:"CARTAGO",tel:"3175020343",email:"f.electronica@agroinsumossa.com",nit:""},
+    {empresa:"ALIMENTOS POLAR",dir:"KM 33 VIA FACTATIVA",ciudad:"FACATATIVA",tel:"3174648053",email:"lorena.piraquive@empresaspolar.com",nit:""},
+    {empresa:"ALIMENTOS PRECOCIDOS DE COLOMBIA PRECOL",dir:"ZN INDUST ANTIGUA PLAZA DE FERIAS BG 57",ciudad:"DOSQUEBRADAS",tel:"3300147",email:"facturacionprecolsa@gmail.com",nit:""},
+    {empresa:"ALIMENTOS VEGETARIANOS HIKARI SAS",dir:"CR 8 A 14 29 CS 54 ALAMOS",ciudad:"SANTA ROSA DE CABAL",tel:"3166295384",email:"facturando.vegangreen@gmail.com",nit:""},
+    {empresa:"ANDEAN VETERINARY LTDA",dir:"CL 90 # 11A - 34 OFICINA 406",ciudad:"BOGOTA",tel:"313 208 91 89",email:"andvetcol@yahoo.es",nit:""},
+    {empresa:"ARANGO BUITRAGO Y CIA S EN C",dir:"CR 2 11 65 CORR PUERTO CALDAS",ciudad:"PEREIRA",tel:"3129340299",email:"contabilidad@prefabricadosomega.com",nit:""},
+    {empresa:"ARTHA COMERCIALIZADORA INTERNACIONAL SAS",dir:"CL 72 24B 30 P 2 CUBA",ciudad:"PEREIRA",tel:"3113837059",email:"ARTHACOMERCIALIZADORA@GMAIL.COM",nit:""},
+    {empresa:"AVIAGEN COLOMBIA SA",dir:"TO DAVIVIENDA CL 26 68 C 61 BR SALITRE",ciudad:"BOGOTA",tel:"3138702469",email:"recepcionfacturas@aviagen.com",nit:""},
+    {empresa:"AYORA PEREZ CARLOS AUGUSTO",dir:"VIA SN SN 2370",ciudad:"BUGA",tel:"2287000",email:"carlosayora@gmail.com",nit:""},
+    {empresa:"BENEFICOS BIOAGRO SAS",dir:"CR 2 A 1 E 27",ciudad:"CARTAGO",tel:"3164283654",email:"ventasyasistencia@beneficosbioagro.com",nit:""},
+    {empresa:"BURGER GREEN SAS",dir:"CRA 12 3 22",ciudad:"PEREIRA",tel:"3128855546",email:"info@burgergreen.co",nit:""},
+    {empresa:"C INSUMOS JYM SAS",dir:"CR 34 23 10",ciudad:"MARINILLA",tel:"3012216819",email:"contabilidadinsumojym@gmail.com",nit:""},
+    {empresa:"CABALLERO DE LA CRUZ HUMBERTO CRODOALDO",dir:"CL 14 10 07 BR GAITAN",ciudad:"BUCARAMANGA",tel:"3125870008",email:"vegetafoodcol@gmail.com",nit:""},
+    {empresa:"CARDONA PEREZ DANIEL ANCIZAR",dir:"CL 1 A 3 36",ciudad:"CARTAGO",tel:"3128323758",email:"leidicardona3@gamil.com",nit:""},
+    {empresa:"CASTANO CASTANO ESTEFANIA",dir:"CL 129 89 37",ciudad:"BOGOTA",tel:"3118196710",email:"stefyksta131693@gmail.com",nit:""},
+    {empresa:"CASTANO GIRALDO HERMAN",dir:"CR 20 11 101",ciudad:"ARMENIA",tel:"3174423323",email:"avicolaelhato@hotmail.com",nit:""},
+    {empresa:"COMERCIALIZADORA Y EMPACADORA AGRORISARALDA SAS",dir:"CR 10 # 5-52 BRR SAN CAYETANO",ciudad:"LA VIRGINIA",tel:"3164463329",email:"agorisaralda@hotmail.com",nit:""},
+    {empresa:"COMPANIA INDUSTRIAL DE PRODUCTOS AGROPEC",dir:"CR 49A 23 45",ciudad:"BELLO",tel:"5200950",email:"administrativo@cipa.com.co",nit:""},
+    {empresa:"CORPORACION CLUB ROTARIO DE PEREIRA",dir:"",ciudad:"PEREIRA",tel:"3122860827",email:"anmaosga@gmail.com",nit:""},
+    {empresa:"CRISTIAN UREÑA",dir:"",ciudad:"PEREIRA",tel:"",email:"",nit:"1022358910"},
+    {empresa:"DIRKA ESP EN CARNES FRIAS",dir:"CR 1 H 39 F 46 BRR EL JAZMIN",ciudad:"CARTAGO",tel:"",email:"dirkacarnesfrias@gmail.com",nit:""},
+    {empresa:"DISTRIBUCIONES GMA SAS",dir:"CR 4 27 65",ciudad:"PEREIRA",tel:"",email:"distribucionesgmasas@hotmail.com",nit:""},
+    {empresa:"DISTRIBUIDORA GRANOS LA SEMILLAS SAS",dir:"BG 78 LA NUBIA CANDELARIA",ciudad:"CANDELARIA",tel:"3152197019",email:"distribuidoragranos@yahoo.es",nit:""},
+    {empresa:"DISTRIPIJAO SAS",dir:"CR 4 ESTADIO 23 73",ciudad:"IBAGUE",tel:"",email:"distripijao@gmail.com",nit:""},
+    {empresa:"DISTRISABORES SMC SAS",dir:"CL 11 8 D 10",ciudad:"MONTERIA",tel:"3017380945",email:"contabilidad@distrisaboresmc.com",nit:""},
+    {empresa:"EL MOLINO VERDE SAS",dir:"CL 67 C 59 28",ciudad:"BOGOTA",tel:"3123087130",email:"facturacion.elmolinoverde@gmail.com",nit:""},
+    {empresa:"FOODS INTERNATIONAL SAS",dir:"CL 65 SUR 39 235 AP 903",ciudad:"SABANETA",tel:"3153046817",email:"julianmarin@foods-international.com",nit:""},
+    {empresa:"GIRALDO MEJIA DISTRIBUCIONES SAS",dir:"CR 6 16 74",ciudad:"CARTAGO",tel:"3105006093",email:"contabilidad-condivalle@hotmail.com",nit:""},
+    {empresa:"GNL GREEN NETWORK LOGISTICS SAS",dir:"KM 3 CERRITOS LAS VIRGINIA BG 5",ciudad:"PEREIRA",tel:"2095000",email:"tramites.facturas@gnl.com.co",nit:""},
+    {empresa:"GONZALEZ QUIROZ JOSE ENRIQUE",dir:"CR 23 25 24 ED ESPONSION OF 214",ciudad:"MANIZALES",tel:"3108249557",email:"leidyagudelo01@hotmail.com",nit:""},
+    {empresa:"GRANISAL LTDA",dir:"CR 17 F 33 C 17",ciudad:"CALI",tel:"5246060",email:"contabilidad@granisal.com",nit:""},
+    {empresa:"GRANOS SECOS LAS SEMILLAS SAS",dir:"CL 85 48 01 BL 1 LC 8 B",ciudad:"ITAGUI",tel:"6044293785",email:"granossecoslassemillas@gmail.com",nit:""},
+    {empresa:"GRUPO EMPRESARIAL CCS SAS",dir:"CR 79 B 49 B 44 SUR",ciudad:"CHIA",tel:"3125715103",email:"GRUPOEMPRESARIALCCSSAS@GMAIL.COM",nit:""},
+    {empresa:"GUTIERREZ VASQUEZ VICTOR HUGO",dir:"CR 3 NORTE 15 17 EL PRADO",ciudad:"CARTAGO",tel:"3128330395",email:"viguva@yahoo.com",nit:""},
+    {empresa:"GUTIERREZ VELASQUEZ SAMUEL",dir:"CL 16 A 3 N 103",ciudad:"CARTAGO",tel:"3148071920",email:"sgvalenpro@gmail.com",nit:""},
+    {empresa:"HENAO ZULUAGA HUMBERTO",dir:"CR 17 11 15 AP 402 ED SALAMANCA",ciudad:"PEREIRA",tel:"3006529493",email:"OESTE4@HOTMAIL.COM",nit:""},
+    {empresa:"HERNANDEZ OCAMPO CARLOS EDUARDO",dir:"CR 13 11 80 ED CAPITOL OF 902",ciudad:"PEREIRA",tel:"",email:"clientesnutrent@gmail.com",nit:""},
+    {empresa:"IN NATURA SAS",dir:"CR 4 B ESTE 5 B 02",ciudad:"FUSAGASUGA",tel:"3203042339",email:"",nit:""},
+    {empresa:"INDUSTRIAS ALIMENTICIAS MASA YA SAS",dir:"CL 26 SUR 68 G 10",ciudad:"BOGOTA",tel:"3105512570",email:"industriamasaya2015@gmail.com",nit:""},
+    {empresa:"INDUSTRIAS ALIMENTICIAS PETISCO SAS",dir:"CARRERA 19 25 35 SC EL TURCO",ciudad:"SANTA ROSA DE OSOS",tel:"3233974295",email:"",nit:""},
+    {empresa:"INGENIA SOLUCIONES ALIMENTARIAS SAS",dir:"CL 61 37 51",ciudad:"BARRANQUILLA",tel:"",email:"ingenia@ingeniafoods.com",nit:""},
+    {empresa:"INGREDION COLOMBIA SA",dir:"CR 5 52 56",ciudad:"CALI",tel:"4315012",email:"col_intercambio@elinvoicing.signature-cloud.com",nit:""},
+    {empresa:"INVERSIONES AVICOLA SANTAGUEDA SAS",dir:"CR 27 A 70 44 ED TORRES DE OVIEDO AP 101",ciudad:"MANIZALES",tel:"3108256444",email:"facturasavicolasantagueda@gmail.com",nit:""},
+    {empresa:"JHON ANDERSON GIRALDO",dir:"CLL 12#19-44",ciudad:"LA UNION",tel:"3174598109",email:"fondoblancou@gmail.com",nit:""},
+    {empresa:"LABORATORIO BIOCOL SAS",dir:"CR 8 5 49",ciudad:"LA VICTORIA",tel:"3155551670",email:"facturacion@laboratoriosbiocol.com",nit:""},
+    {empresa:"LABORATORIO CLEMEN SAS",dir:"CR 41 D 46 40",ciudad:"CALI",tel:"3175081762",email:"laboratorioclemen198@gmail.com",nit:""},
+    {empresa:"LABORATORIO DISNATURA NUTRICION INTELIGE",dir:"CL 17 38 A 05",ciudad:"CALI",tel:"3117209380",email:"compras@laboratoriodisnatura.com",nit:""},
+    {empresa:"LABORATORIO G B SAS",dir:"CL 32 17 C 30",ciudad:"CALI",tel:"3177388857",email:"contabilidad@laboratoriosgyb.co",nit:""},
+    {empresa:"LARA CORTES RAMIRO",dir:"CL 38 SUR 3 250 BG C LC 117",ciudad:"NEIVA",tel:"8702037",email:"facturacion@almacencentral.com.co",nit:""},
+    {empresa:"LEON QUINTERO CAMILO ARTURO",dir:"CR 1 H 39 F 46 BRR EL JAZMIN",ciudad:"CARTAGO",tel:"3122831579",email:"derivadoscarnicosdelrancho@gmail.com",nit:""},
+    {empresa:"LONDONO ALZATE JUAN ALBERTO",dir:"CR 13 8N 67 OF 305",ciudad:"ARMENIA",tel:"67468446",email:"avicolafloresta@hotmail.com",nit:""},
+    {empresa:"LONDONO RAMIREZ ANDRES",dir:"CRA 13 8 67 EDIFICIO CANA BRAVA",ciudad:"ARMENIA",tel:"7468446",email:"avicolafloresta@hotmail.com",nit:""},
+    {empresa:"LOPRETTO DURAN FRANCISCO",dir:"CL 13 56 20",ciudad:"CARTAGO",tel:"2149910",email:"firmaelectronicadian@gmail.com",nit:""},
+    {empresa:"LOS RANCHOS SAS",dir:"HC LA HERMITA ZARAGOZA VILLA DANIELA",ciudad:"CARTAGO",tel:"3016517230",email:"facturacion900101225@gmail.com",nit:""},
+    {empresa:"MARIN DE ZAPATA AYDEE",dir:"CR 7 43 224 OF 403 ED CODEGAR",ciudad:"PEREIRA",tel:"3127500045",email:"avicolavillaines@hotmail.com",nit:""},
+    {empresa:"MARQUEZ PEREZ MAURA PATRICIA",dir:"CR 18 32 05",ciudad:"OVEJAS",tel:"3205108800",email:"maumar696@yahoo.es",nit:""},
+    {empresa:"MAYA HERRERA SUSANA",dir:"CR 6 1 A EL LIBERTADOR",ciudad:"CARTAGO",tel:"3104501442",email:"susy29_4@hotmail.com",nit:""},
+    {empresa:"MEISSON ALIMENTACION SALUDABLE S.A.S",dir:"Calle 83 A-07 sur",ciudad:"IBAGUE",tel:"3144877360",email:"meissonalimentacionpet@gmail.com",nit:""},
+    {empresa:"MONTEJICAR SAS",dir:"CR 5 75 44 AP 503",ciudad:"BOGOTA",tel:"3154378446",email:"agonzalez76@yahoo.com",nit:""},
+    {empresa:"MORA SANCHEZ MARIA GRACIELA",dir:"CR 10 27 106",ciudad:"GIRARDOT",tel:"3114503081",email:"colchoneriasolomarg@hotmail.com",nit:""},
+    {empresa:"NATUPET SAS",dir:"CR 59 23 27",ciudad:"MEDELLIN",tel:"3148115332",email:"contabilidad@natupet.co",nit:""},
+    {empresa:"NATURAL MEDY DISTRIBUCIONES SAS",dir:"CL 13 22 61 ED BELLA ZOE",ciudad:"CALI",tel:"3106955296",email:"contabilidad@naturalmedy.com",nit:""},
+    {empresa:"NAVLAB PRODUCTS SAS",dir:"CR 77 CL 48 A 14",ciudad:"MEDELLIN",tel:"2348349",email:"admonnavlab@gmail.com",nit:""},
+    {empresa:"NUTRIENDO SONRISAS SAS",dir:"CR 21A 8 77",ciudad:"CARTAGO",tel:"3173762304",email:"NUTRIENDOSONRISAS2023@GMAIL.COM",nit:""},
+    {empresa:"NUTRIMIXES COLOMBIA SAS",dir:"CL 3 6 35",ciudad:"CARTAGO",tel:"3136381231",email:"facturacioncol@nutrimixes.com",nit:""},
+    {empresa:"NUTRITEC SAS",dir:"CL 11 32 47 BOG 2 Y 3 BODEGAS ARROYOHOND",ciudad:"YUMBO",tel:"6544409",email:"facturacion@nutritec.com.co",nit:""},
+    {empresa:"PALACIO GUARIN MARIA MONICA",dir:"CL 24 5 75",ciudad:"PEREIRA",tel:"3183463685",email:"masalaconsciente@gmail.com",nit:""},
+    {empresa:"PAMPA SAS",dir:"CR 7 BIS 67 147",ciudad:"CALI",tel:"31870848888",email:"facturaelectronica@pampaltda.com",nit:""},
+    {empresa:"PAPELES NACIONALES SA",dir:"PARAJE LA MARINA VIA PEREIRA CARTAGO",ciudad:"PEREIRA",tel:"3202113049",email:"gestion.facturas@papelesnacionales.com",nit:""},
+    {empresa:"POLO JIMENEZ LIZ CAROLINA",dir:"CLL 34 A 36 26",ciudad:"CORDOBA",tel:"3233472618",email:"lizzcarolinap@gmail.com",nit:""},
+    {empresa:"PORCIOLA PRADERA SA",dir:"CL 49 A 28 08",ciudad:"MANIZALES",tel:"8853450",email:"compras@porcicolapradera.com",nit:""},
+    {empresa:"PRECOOPERATIVA COMERCIALIZADORA DE GRANOS",dir:"CALLE 4 # 3-22",ciudad:"CARTAGO",tel:"3126501126",email:"precooperativaagricoladegranos@gmail.com",nit:""},
+    {empresa:"PRODUCTORA COMERCIALIZADORA DE CONCENTRA",dir:"KM 1 VIA ALCALA CARTAGO FINCA LA GIRALDA",ciudad:"ALCALA",tel:"3164822449",email:"facturacion@proconcersas.com",nit:""},
+    {empresa:"PRODUCTOS ALIMENTICIOS DOGGER SAS",dir:"CR 65 A 13 175 LC 31 A",ciudad:"MEDELLIN",tel:"3333232",email:"notificaciones@dogger.com.co",nit:""},
+    {empresa:"PROMOTORA JMS SAS",dir:"CR 30 10C 228 OF 405",ciudad:"MEDELLIN",tel:"4449444",email:"contabilidad@solidos.com.co",nit:""},
+    {empresa:"RAMIREZ ARANGO HUMBERTO EMILIO",dir:"CRA 7 43 224 OFI 504 ED CODEGAR",ciudad:"PEREIRA",tel:"3113009721",email:"humbertora523@gmail.com",nit:""},
+    {empresa:"RAMIREZ DE LONDONO ZULMA",dir:"CR 13 8N 67 OF 305",ciudad:"ARMENIA",tel:"67454868",email:"avicolafloresta@hotmail.com",nit:""},
+    {empresa:"RAVENWERK SAS",dir:"CR 45 1 59 AP 701",ciudad:"MEDELLIN",tel:"3153513283",email:"ravenwerksas@gmail.com",nit:""},
+    {empresa:"RESTREPO CHAVERRA JUAN PABLO",dir:"KM1 CALLEJON M PQ MUNDO CONJ SAMARIA C3",ciudad:"BUGA",tel:"3006533610",email:"juanpablorpo@gmail.com",nit:""},
+    {empresa:"RIBARCOL SAS",dir:"CL 6 CR 9 TERMINAL DE LA CALLE",ciudad:"ANSERMANUEVO",tel:"3158546550",email:"avicolombia@hotmail.com",nit:""},
+    {empresa:"RUBIANO VANEGAS LUIS EDUARDO",dir:"CL 74 65 59 P 2",ciudad:"BOGOTA",tel:"6303196",email:"ledorubvanegas@gmail.com",nit:""},
+    {empresa:"SANCHEZ RODRIGUEZ EULING SULENA",dir:"CL 9 8 63",ciudad:"SOCORRO",tel:"3202518622",email:"euling15@hotmail.com",nit:""},
+    {empresa:"SANLOPS SAS",dir:"CR 4 22 52 LA ESTACION",ciudad:"IBAGUE",tel:"3147315133",email:"facturacionelectronica@sanlops.com",nit:""},
+    {empresa:"SANTA ANITA NAPOLES SA",dir:"CL 70 NORTE 3 C N 275 BG 2",ciudad:"CALI",tel:"3108965105",email:"ferecepcion@santaanitanapoles.com",nit:""},
+    {empresa:"SANTAMARR SAS",dir:"CL 17 7 60 OF 733",ciudad:"BOGOTA",tel:"3132066642",email:"amarroquin@mgasociados.co",nit:""},
+    {empresa:"SANTOS LOZADA MILTON ANDRES",dir:"CR 16B 61A NORTE 28",ciudad:"POPAYAN",tel:"3104875091",email:"masl410@hotmail.com",nit:""},
+    {empresa:"SANTOS MENDEZ NEIDER DE JESUS",dir:"MZ C LT 26",ciudad:"MONTERIA",tel:"3128144254",email:"neidermax123@gmail.com",nit:""},
+    {empresa:"SEABOARD OVERSEAS COLOMBIA SAS",dir:"CR 11 77 A 49 OF 902",ciudad:"BOGOTA",tel:"3157836267",email:"ST-COL-Contabilidad@seaboardtrade.com",nit:""},
+    {empresa:"SEGURIDAD ALIMENTARIA DE OCCIDENTE SAS",dir:"CL 31 NORTE 13 110 CA 85",ciudad:"POPAYAN",tel:"3154323200",email:"900075205@recepciondefacturas.co",nit:""},
+    {empresa:"SIERRA CHAMORRO ELIZABETH",dir:"CL 43A 13 80",ciudad:"PALMIRA",tel:"2871272",email:"desaelia@hotmail.com",nit:""},
+    {empresa:"SIGRA",dir:"CRA 46 # 13-56",ciudad:"BOGOTA",tel:"3007085521",email:"",nit:""},
+    {empresa:"SIMPLY SUB - NILO ENRIQUE ANGULO LOPEZ",dir:"CR 18 # 52A - 14",ciudad:"VILLAVICENCIO",tel:"3202395180",email:"nilo180988@gmail.com",nit:""},
+    {empresa:"SUAREZ MORALES JHON ALEXANDER",dir:"DG 26 P 19 103 A 17 BR MORROQUIN",ciudad:"CALI",tel:"3146262746",email:"suarezjhon840@gmail.com",nit:""},
+    {empresa:"SUMINISTROS DE COLOMBIA SAS",dir:"CR 48 72 SUR 01",ciudad:"SABANETA",tel:"3058212",email:"rec_fac_sm@corona.com.co",nit:""},
+    {empresa:"SUPERTIENDAS CANAVERAL SAS",dir:"CL 18 A 56 65 LC 10",ciudad:"CALI",tel:"3322321",email:"recepcion.fe@supertiendascanaveral.com",nit:""},
+    {empresa:"TECNAS SA BIC",dir:"CR 50 G 12 SUR 29",ciudad:"ITAGUI",tel:"2553809",email:"proveedoresfacturacionelectronica@tecnas.com.co",nit:""},
+    {empresa:"TERRA FOODS SAS",dir:"CL 80 VIA SIBERIA PARQUE AGROINDUSTRIAL",ciudad:"COTA",tel:"3187159986",email:"recepciondocelectronicos@terrafoods.com.co",nit:""},
+    {empresa:"TERRAZAS AGROPECUARIAS",dir:"KM 2 VIA ANSERMANUEVO CRR ANACARO BAJO",ciudad:"CARTAGO",tel:"3186184372",email:"logistica@terrazasagropecuarias.com",nit:""},
+    {empresa:"TESHIMA PRODUCTS SAS",dir:"CR 30 22 55 BR NUEVO",ciudad:"PALMIRA",tel:"3104580261",email:"info@teshimasproducts.com.co",nit:""},
+    {empresa:"TONING SAS",dir:"CR 37 10 303",ciudad:"YUMBO",tel:"6933390",email:"siesarecepcion@siesafe.co",nit:""},
+    {empresa:"VITAOVO SAS",dir:"CR 12 72 E 72",ciudad:"PEREIRA",tel:"3105392020",email:"contabilidad@vitaovo.co",nit:""}
+  ];
+  lista.forEach(c => push(ref(db,'oc_clientes'), c));
+}
+
+function seedProductos(){
+  const lista = [
+    {codigo:"PTSG",articulo:"PROTEINA TEXTURIZADA DE SOYA GRUESO",precio:5137},
+    {codigo:"PTSM",articulo:"PROTEINA TEXTURIZADA DE SOYA MEDIO",precio:5137},
+    {codigo:"PTSP",articulo:"PROTEINA TEXTURIZADA DE SOYA POLVO",precio:5493},
+    {codigo:"PRV",articulo:"PRACTIVEG TEXTURIZADO DE SOYA",precio:4000},
+    {codigo:"SPF-05",articulo:"HARINA PROTEINICA DE SOYA",precio:5350},
+    {codigo:"FSC",articulo:"FRIJOL SOYA CLASIFICADO",precio:3250},
+    {codigo:"TS#2",articulo:"TORTA DE SOYA # 2",precio:2500},
+    {codigo:"FSE",articulo:"FRIJOL SOYA EXTRUDER",precio:2350},
+    {codigo:"TS",articulo:"TORTA DE SOYA",precio:2350},
+    {codigo:"ACS",articulo:"ACEITE CRUDO DE SOYA",precio:0},
+    {codigo:"FLETE 1",articulo:"TRANSPORTE ALEN+PRO A CLIENTE - COOTRANSCART.",precio:0},
+    {codigo:"FLETE 2",articulo:"TRANSPORTE ALEN+PRO A CLIENTE - VELOENVIOS.",precio:0}
+  ];
+  lista.forEach(p => push(ref(db,'oc_productos'), p));
+}
+
+function seedHistorico(){
+  const lista = [
+    {oc:481,fecha:"2026-04-07",empresa:"PAMPA SAS",producto:"HARINA PROTEINICA DE SOYA",cantidad:2000,precio:5350},
+    {oc:486,fecha:"2026-04-17",empresa:"DISTRISABORES SMC SAS",producto:"PROTEINA TEXTURIZADA DE SOYA GRUESO",cantidad:8000,precio:5137},
+    {oc:501,fecha:"2026-04-26",empresa:"CRISTIAN UREÑA",producto:"TORTA DE SOYA",cantidad:500,precio:1900},
+    {oc:503,fecha:"2026-05-02",empresa:"INDUSTRIAS ALIMENTICIAS PETISCO SAS",producto:"PROTEINA TEXTURIZADA DE SOYA GRUESO",cantidad:2000,precio:5090}
+  ];
+  lista.forEach(h => push(ref(db,'oc_historico'), h));
+}
+
+// ─── NEXT OC NUMBER ──────────────────────────────────────
+function getNextOC(){
+  const nums = Object.values(historico).map(h=>h.oc||0);
+  return nums.length ? Math.max(...nums)+1 : 504;
+}
+
+// ─── TAB SWITCHING ───────────────────────────────────────
+window.switchTab = function(tab){
+  currentTab = tab;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='oc') renderOC();
+  else if(tab==='historico') renderHistorico();
+  else if(tab==='clientes') renderClientes();
+  else if(tab==='productos') renderProductos();
+};
+
+// ─── OC PANEL ────────────────────────────────────────────
+function updateClienteSelect(){
+  const sel = document.getElementById('oc-cliente');
+  if(!sel) return;
+  const cur = sel.value;
+  const sorted = Object.entries(clientes).sort((a,b)=>a[1].empresa.localeCompare(b[1].empresa));
+  sel.innerHTML = '<option value="">— Seleccionar cliente —</option>' +
+    sorted.map(([k,c])=>`<option value="${k}">${c.empresa}</option>`).join('');
+  if(cur) sel.value = cur;
+}
+
+function renderOC(){
+  const prodSorted = Object.entries(productos).sort((a,b)=>a[1].articulo.localeCompare(b[1].articulo));
+  const prodOptions = prodSorted.map(([k,p])=>`<option value="${k}">${p.articulo}</option>`).join('');
+
+  let itemsHTML = ocItems.map((it,i)=>`
+    <div class="item-row" id="item-${i}">
+      <div class="item-prod">
+        <select onchange="onItemProd(${i},this.value)">
+          <option value="">— Producto —</option>
+          ${prodSorted.map(([k,p])=>`<option value="${k}" ${it.prodKey===k?'selected':''}>${p.articulo}</option>`).join('')}
+        </select>
+        <div class="item-code">${it.codigo||''}</div>
+      </div>
+      <input type="number" min="0" placeholder="Cant." value="${it.cantidad||''}" oninput="ocItems[${i}].cantidad=parseFloat(this.value)||0;calcTotals()">
+      <input type="number" min="0" placeholder="Precio" value="${it.precio||''}" oninput="ocItems[${i}].precio=parseFloat(this.value)||0;calcTotals()">
+      <button class="btn-danger btn" onclick="removeItem(${i})">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      </button>
+    </div>`).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="card">
+      <div class="grid2">
+        <div class="field"><label>OC #</label><input id="oc-num" type="number" value="${getNextOC()}"></div>
+        <div class="field"><label>Fecha</label><input id="oc-fecha" type="date" value="${today()}"></div>
+      </div>
+      <div class="field"><label>Estado</label>
+        <select id="oc-estado">
+          <option>PRO-FORMA</option><option>CONFIRMADA</option><option>DESPACHADA</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Cliente</div>
+      <div class="field"><label>Empresa</label>
+        <select id="oc-cliente" onchange="autoFillCliente()">
+          <option value="">— Seleccionar cliente —</option>
+        </select>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>NIT</label><input id="c-nit" type="text"></div>
+        <div class="field"><label>Ciudad</label><input id="c-ciudad" type="text"></div>
+      </div>
+      <div class="field"><label>Dirección</label><input id="c-dir" type="text"></div>
+      <div class="grid2">
+        <div class="field"><label>Teléfono</label><input id="c-tel" type="tel"></div>
+        <div class="field"><label>Email</label><input id="c-email" type="email"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Enviar a</div>
+      <button class="copy-btn" onclick="copiarEnvio()">↓ Copiar datos del cliente</button>
+      <div class="field" style="margin-top:8px"><label>Empresa</label><input id="e-empresa" type="text"></div>
+      <div class="grid2">
+        <div class="field"><label>Ciudad</label><input id="e-ciudad" type="text"></div>
+        <div class="field"><label>NIT</label><input id="e-nit" type="text"></div>
+      </div>
+      <div class="field"><label>Dirección</label><input id="e-dir" type="text"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Condiciones</div>
+      <div class="field"><label>Solicitado por</label><input id="oc-solicitante" type="text"></div>
+      <div class="field"><label>Términos de pago</label>
+        <select id="oc-pago">
+          <option>CONTADO</option><option>15 DÍAS</option><option>30 DÍAS</option><option>45 DÍAS</option><option>60 DÍAS</option>
+        </select>
+      </div>
+      <div class="field"><label>Condiciones de envío</label>
+        <select id="oc-envio">
+          <option>RECOGE CLIENTE.</option><option>FLETE INCLUIDO</option><option>COOTRANSCART.</option><option>VELOENVIOS</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Productos</div>
+      <div class="items-header">
+        <span>Producto</span><span>Cant.</span><span>Precio</span><span></span>
+      </div>
+      <div id="items-body">${itemsHTML}</div>
+      <button class="btn btn-block" style="margin-top:10px" onclick="addItem()">+ Agregar producto</button>
+
+      <div class="totals" style="margin-top:12px">
+        <div class="totals-row"><span>Subtotal sin IVA</span><span id="t-sub">$ 0</span></div>
+        <div class="totals-row"><span>IVA (5%)</span><span id="t-iva">$ 0</span></div>
+        <div class="totals-row main"><span>Total</span><span id="t-total">$ 0</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field"><label>Comentarios e instrucciones de envío</label>
+        <textarea id="oc-comentarios"></textarea>
+      </div>
+      <div class="field"><label>Autorizado por</label>
+        <input id="oc-autorizado" type="text" value="SAMUEL GUTIERREZ V">
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-bottom:24px">
+      <button class="btn" onclick="limpiarOC()">Nueva</button>
+      <button class="btn" onclick="previewOC()">Vista previa</button>
+      <button class="btn btn-primary" onclick="guardarOC()">Guardar OC</button>
+    </div>`;
+
+  updateClienteSelect();
+  calcTotals();
+}
+
+window.autoFillCliente = function(){
+  const key = document.getElementById('oc-cliente').value;
+  const c = clientes[key];
+  if(!c) return;
+  document.getElementById('c-nit').value = c.nit||'';
+  document.getElementById('c-ciudad').value = c.ciudad||'';
+  document.getElementById('c-dir').value = c.dir||'';
+  document.getElementById('c-tel').value = c.tel||'';
+  document.getElementById('c-email').value = c.email||'';
+  document.getElementById('oc-solicitante').value = c.empresa;
+};
+
+window.copiarEnvio = function(){
+  document.getElementById('e-empresa').value = document.getElementById('oc-cliente').options[document.getElementById('oc-cliente').selectedIndex]?.text||'';
+  document.getElementById('e-ciudad').value = document.getElementById('c-ciudad').value;
+  document.getElementById('e-dir').value = document.getElementById('c-dir').value;
+  document.getElementById('e-nit').value = document.getElementById('c-nit').value;
+};
+
+window.onItemProd = function(i, key){
+  const p = productos[key];
+  if(p){ ocItems[i].prodKey=key; ocItems[i].codigo=p.codigo; ocItems[i].articulo=p.articulo; ocItems[i].precio=p.precio||0; }
+  else { ocItems[i].prodKey=''; ocItems[i].codigo=''; ocItems[i].articulo=''; }
+  const row = document.getElementById('item-'+i);
+  if(row){
+    row.querySelector('.item-code').textContent = ocItems[i].codigo||'';
+    const priceInput = row.querySelectorAll('input')[1];
+    if(priceInput) priceInput.value = ocItems[i].precio||'';
+  }
+  calcTotals();
+};
+
+window.addItem = function(){
+  ocItems.push({prodKey:'',codigo:'',articulo:'',cantidad:0,precio:0});
+  renderOC();
+  setTimeout(()=>{
+    const rows = document.querySelectorAll('.item-row');
+    if(rows.length) rows[rows.length-1].scrollIntoView({behavior:'smooth',block:'center'});
+  },100);
+};
+
+window.removeItem = function(i){
+  ocItems.splice(i,1);
+  renderOC();
+};
+
+function calcTotals(){
+  let sub=0;
+  ocItems.forEach(it=>{ sub+=(it.cantidad||0)*(it.precio||0); });
+  const iva = sub*0.05;
+  const el = (id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  el('t-sub', fmt(sub));
+  el('t-iva', fmt(iva));
+  el('t-total', fmt(sub+iva));
+}
+
+window.limpiarOC = function(){
+  ocItems = [];
+  renderOC();
+};
+
+window.guardarOC = function(){
+  const empresa = document.getElementById('oc-cliente');
+  const empName = empresa.options[empresa.selectedIndex]?.text;
+  if(!empName || empName==='— Seleccionar cliente —'){ toast('Selecciona un cliente'); return; }
+  if(ocItems.length===0 || !ocItems.some(it=>it.articulo&&it.cantidad>0)){ toast('Agrega al menos un producto'); return; }
+  const ocNum = parseInt(document.getElementById('oc-num').value)||getNextOC();
+  const fecha = document.getElementById('oc-fecha').value;
+  const promises = ocItems.filter(it=>it.articulo&&it.cantidad>0).map(it=>
+    push(ref(db,'oc_historico'), {oc:ocNum, fecha, empresa:empName, producto:it.articulo, cantidad:it.cantidad, precio:it.precio||0})
+  );
+  Promise.all(promises).then(()=>{
+    toast(`OC #${ocNum} guardada ✓`);
+    ocItems = [];
+    renderOC();
+  });
+};
+
+window.previewOC = function(){
+  const empresa = document.getElementById('oc-cliente');
+  const empName = empresa.options[empresa.selectedIndex]?.text || '—';
+  const ocNum = document.getElementById('oc-num').value;
+  const fecha = document.getElementById('oc-fecha').value;
+  const estado = document.getElementById('oc-estado').value;
+  const pago = document.getElementById('oc-pago').value;
+  const envio = document.getElementById('oc-envio').value;
+  const comentarios = document.getElementById('oc-comentarios').value;
+  const autorizado = document.getElementById('oc-autorizado').value;
+  const cNit = document.getElementById('c-nit').value;
+  const cCiudad = document.getElementById('c-ciudad').value;
+  const cDir = document.getElementById('c-dir').value;
+  const cTel = document.getElementById('c-tel').value;
+  const eEmpresa = document.getElementById('e-empresa').value||empName;
+  const eCiudad = document.getElementById('e-ciudad').value||cCiudad;
+  const eDir = document.getElementById('e-dir').value||cDir;
+  const eNit = document.getElementById('e-nit').value||cNit;
+  let sub=0,iva=0;
+  ocItems.forEach(it=>{ const s=(it.cantidad||0)*(it.precio||0); sub+=s; iva+=s*0.05; });
+  const rows = ocItems.filter(it=>it.articulo).map(it=>`
+    <tr><td>${it.codigo||''}</td><td>${it.articulo}</td>
+    <td style="text-align:right">${fmtNum(it.cantidad)}</td>
+    <td style="text-align:right">${fmt(it.precio)}</td>
+    <td style="text-align:right">${fmt((it.cantidad||0)*(it.precio||0))}</td></tr>`).join('');
+  document.getElementById('preview-content').innerHTML = `
+    <div class="preview-header">
+      <div class="preview-logo">ALEN+PRO</div>
+      <div style="font-size:11px;color:#666">NIT: 800.183.642-5 · Puerto Caldas, Pereira · comercial@alenpro.co</div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px">
+        <strong>ORDEN DE PEDIDO PARA VENTA</strong>
+        <span><strong>OC# ${ocNum}</strong> · ${fecha} · <span style="background:#eff6ff;color:#1d4ed8;padding:2px 6px;border-radius:4px;font-size:10px">${estado}</span></span>
+      </div>
+    </div>
+    <div class="preview-section">
+      <div class="preview-box"><strong>Cliente</strong>${empName}<br>${cDir||'—'}<br>${cCiudad||'—'} · NIT: ${cNit||'—'}<br>Tel: ${cTel||'—'}</div>
+      <div class="preview-box"><strong>Enviar a</strong>${eEmpresa}<br>${eDir||'—'}<br>${eCiudad||'—'} · NIT: ${eNit||'—'}</div>
+    </div>
+    <div style="font-size:11px;margin-bottom:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+      <div><strong style="display:block;font-size:10px;color:#999">Solicitado por</strong>${document.getElementById('oc-solicitante').value||'—'}</div>
+      <div><strong style="display:block;font-size:10px;color:#999">Pago</strong>${pago}</div>
+      <div><strong style="display:block;font-size:10px;color:#999">Envío</strong>${envio}</div>
+    </div>
+    <table class="preview-table">
+      <thead><tr><th>Cód.</th><th>Producto</th><th style="text-align:right">Cant.</th><th style="text-align:right">Precio</th><th style="text-align:right">Subtotal</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="preview-totals">
+      <div><span>Subtotal sin IVA</span><span>${fmt(sub)}</span></div>
+      <div><span>IVA (5%)</span><span>${fmt(iva)}</span></div>
+      <div class="main-total"><span>TOTAL</span><span>${fmt(sub+iva)}</span></div>
+    </div>
+    ${comentarios?`<div style="font-size:11px;color:#666;margin-top:8px;border-top:1px solid #eee;padding-top:8px"><strong>Comentarios:</strong> ${comentarios}</div>`:''}
+    <div style="font-size:10px;color:#999;margin-top:10px;border-top:1px solid #eee;padding-top:8px;text-align:center">
+      Autorizado por: ${autorizado} · 310 395 20 58 - 311 521 45 88<br>
+      info@alenpro.co · comercial@alenpro.co · Puerto Caldas, Paraje La Marina - Cra 4 # 23-02
+    </div>`;
+  openModal('modal-preview');
+};
+
+// ─── HISTORICO ───────────────────────────────────────────
+function renderHistorico(filter=''){
+  const list = Object.entries(historico)
+    .map(([k,h])=>({...h,key:k}))
+    .filter(h=> !filter || JSON.stringify(h).toLowerCase().includes(filter.toLowerCase()))
+    .sort((a,b)=>(b.oc||0)-(a.oc||0));
+
+  if(list.length===0){
+    document.getElementById('content').innerHTML = `
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" placeholder="Buscar OC, cliente, producto..." oninput="renderHistorico(this.value)">
+      </div>
+      <div class="empty"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>Sin resultados</p></div>`;
+    return;
+  }
+
+  // Agrupar por OC
+  const grouped = {};
+  list.forEach(h=>{
+    if(!grouped[h.oc]) grouped[h.oc]={oc:h.oc,fecha:h.fecha,empresa:h.empresa,items:[],total:0};
+    grouped[h.oc].items.push(h);
+    grouped[h.oc].total += (h.cantidad||0)*(h.precio||0);
+  });
+
+  const html = Object.values(grouped).sort((a,b)=>b.oc-a.oc).map(g=>`
+    <div class="hist-item">
+      <div class="hist-top">
+        <span class="badge badge-oc">OC-${g.oc}</span>
+        <span style="font-size:11px;color:#999;margin:0 8px;flex:1">${g.fecha||''}</span>
+        <span class="hist-total">${fmt(g.total*1.05)}</span>
+      </div>
+      <div class="hist-empresa">${g.empresa}</div>
+      <div class="hist-detail">${g.items.map(i=>`${i.producto} · ${fmtNum(i.cantidad)} kg · ${fmt(i.precio)}`).join('<br>')}</div>
+    </div>`).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-input" placeholder="Buscar OC, cliente, producto..." oninput="renderHistorico(this.value)" value="${filter}">
+    </div>
+    ${html}`;
+}
+window.renderHistorico = renderHistorico;
+
+// ─── CLIENTES ────────────────────────────────────────────
+function renderClientes(filter=''){
+  const list = Object.entries(clientes)
+    .map(([k,c])=>({...c,key:k}))
+    .filter(c=> !filter || JSON.stringify(c).toLowerCase().includes(filter.toLowerCase()))
+    .sort((a,b)=>a.empresa.localeCompare(b.empresa));
+
+  const html = list.map(c=>`
+    <div class="list-item">
+      <div class="list-item-main" onclick="editCliente('${c.key}')">
+        <div class="list-item-name">${c.empresa}</div>
+        <div class="list-item-sub">${c.ciudad||'—'} ${c.tel?'· '+c.tel:''}</div>
+      </div>
+      <div class="list-item-actions">
+        <button class="btn btn-icon" onclick="editCliente('${c.key}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn btn-icon" style="color:var(--danger)" onclick="deleteCliente('${c.key}','${c.empresa.replace(/'/g,"\\'")}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+        </button>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-input" placeholder="Buscar cliente..." oninput="renderClientes(this.value)" value="${filter}">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="newCliente()">+ Nuevo cliente</button>
+    ${html||'<div class="empty"><p>Sin resultados</p></div>'}`;
+}
+window.renderClientes = renderClientes;
+
+window.newCliente = function(){
+  editingClienteKey = null;
+  document.getElementById('mc-title').textContent = 'Nuevo cliente';
+  document.getElementById('mc-key').value = '';
+  ['empresa','dir','ciudad','tel','email','nit'].forEach(f=>document.getElementById('mc-'+f).value='');
+  openModal('modal-cliente');
+};
+
+window.editCliente = function(key){
+  editingClienteKey = key;
+  const c = clientes[key];
+  document.getElementById('mc-title').textContent = 'Editar cliente';
+  document.getElementById('mc-key').value = key;
+  document.getElementById('mc-empresa').value = c.empresa||'';
+  document.getElementById('mc-dir').value = c.dir||'';
+  document.getElementById('mc-ciudad').value = c.ciudad||'';
+  document.getElementById('mc-tel').value = c.tel||'';
+  document.getElementById('mc-email').value = c.email||'';
+  document.getElementById('mc-nit').value = c.nit||'';
+  openModal('modal-cliente');
+};
+
+window.saveCliente = function(){
+  const emp = document.getElementById('mc-empresa').value.trim();
+  if(!emp){ toast('El nombre es requerido'); return; }
+  const obj = {
+    empresa:emp,
+    dir:document.getElementById('mc-dir').value.trim(),
+    ciudad:document.getElementById('mc-ciudad').value.trim(),
+    tel:document.getElementById('mc-tel').value.trim(),
+    email:document.getElementById('mc-email').value.trim(),
+    nit:document.getElementById('mc-nit').value.trim()
+  };
+  const key = document.getElementById('mc-key').value;
+  const p = key ? set(ref(db,'oc_clientes/'+key), obj) : push(ref(db,'oc_clientes'), obj);
+  p.then(()=>{ closeModal('modal-cliente'); toast(key?'Cliente actualizado':'Cliente agregado'); });
+};
+
+window.deleteCliente = function(key, nombre){
+  if(!confirm(`¿Eliminar "${nombre}"?`)) return;
+  remove(ref(db,'oc_clientes/'+key)).then(()=>toast('Cliente eliminado'));
+};
+
+// ─── PRODUCTOS ───────────────────────────────────────────
+function renderProductos(filter=''){
+  const list = Object.entries(productos)
+    .map(([k,p])=>({...p,key:k}))
+    .filter(p=> !filter || JSON.stringify(p).toLowerCase().includes(filter.toLowerCase()))
+    .sort((a,b)=>a.articulo.localeCompare(b.articulo));
+
+  const html = list.map(p=>`
+    <div class="list-item">
+      <div class="list-item-main" onclick="editProducto('${p.key}')">
+        <div class="list-item-name">${p.articulo}</div>
+        <div class="list-item-sub"><span class="badge">${p.codigo}</span> ${p.precio?'· '+fmt(p.precio):''}</div>
+      </div>
+      <div class="list-item-actions">
+        <button class="btn btn-icon" onclick="editProducto('${p.key}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn btn-icon" style="color:var(--danger)" onclick="deleteProducto('${p.key}','${p.articulo.replace(/'/g,"\\'")}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+        </button>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-input" placeholder="Buscar producto..." oninput="renderProductos(this.value)" value="${filter}">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="newProducto()">+ Nuevo producto</button>
+    ${html||'<div class="empty"><p>Sin resultados</p></div>'}`;
+}
+window.renderProductos = renderProductos;
+
+window.newProducto = function(){
+  editingProductoKey = null;
+  document.getElementById('mp-title').textContent = 'Nuevo producto';
+  document.getElementById('mp-key').value = '';
+  ['codigo','articulo','precio'].forEach(f=>document.getElementById('mp-'+f).value='');
+  openModal('modal-producto');
+};
+
+window.editProducto = function(key){
+  editingProductoKey = key;
+  const p = productos[key];
+  document.getElementById('mp-title').textContent = 'Editar producto';
+  document.getElementById('mp-key').value = key;
+  document.getElementById('mp-codigo').value = p.codigo||'';
+  document.getElementById('mp-articulo').value = p.articulo||'';
+  document.getElementById('mp-precio').value = p.precio||0;
+  openModal('modal-producto');
+};
+
+window.saveProducto = function(){
+  const cod = document.getElementById('mp-codigo').value.trim();
+  const art = document.getElementById('mp-articulo').value.trim();
+  if(!cod||!art){ toast('Código y artículo son requeridos'); return; }
+  const obj = {codigo:cod, articulo:art, precio:parseFloat(document.getElementById('mp-precio').value)||0};
+  const key = document.getElementById('mp-key').value;
+  const p = key ? set(ref(db,'oc_productos/'+key), obj) : push(ref(db,'oc_productos'), obj);
+  p.then(()=>{ closeModal('modal-producto'); toast(key?'Producto actualizado':'Producto agregado'); });
+};
+
+window.deleteProducto = function(key, nombre){
+  if(!confirm(`¿Eliminar "${nombre}"?`)) return;
+  remove(ref(db,'oc_productos/'+key)).then(()=>toast('Producto eliminado'));
+};
+
+// ─── INIT ────────────────────────────────────────────────
+initData();
+setTimeout(()=>{ if(currentTab==='oc') renderOC(); }, 800);
+</script>
+</body>
+</html>
