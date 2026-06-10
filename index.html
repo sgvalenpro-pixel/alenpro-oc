@@ -487,20 +487,19 @@ function updateClienteSelect(){
 
 function renderOC(){
   const prodSorted = Object.entries(productos).sort((a,b)=>a[1].articulo.localeCompare(b[1].articulo));
-  const prodOptions = prodSorted.map(([k,p])=>`<option value="${k}">${p.articulo}</option>`).join('');
 
   let itemsHTML = ocItems.map((it,i)=>`
     <div class="item-row" id="item-${i}">
       <div class="item-prod">
-        <select onchange="onItemProd(${i},this.value)">
+        <select id="sel-prod-${i}">
           <option value="">— Producto —</option>
           ${prodSorted.map(([k,p])=>`<option value="${k}" ${it.prodKey===k?'selected':''}>${p.articulo}</option>`).join('')}
         </select>
-        <div class="item-code">${it.codigo||''}</div>
+        <div class="item-code" id="item-code-${i}">${it.codigo||''}</div>
       </div>
-      <input type="number" min="0" placeholder="Cant." value="${it.cantidad||''}" data-idx="${i}" data-field="cantidad" oninput="ocItems[parseInt(this.dataset.idx)].cantidad=parseFloat(this.value)||0;calcTotals()">
-      <input type="number" min="0" placeholder="Precio" value="${it.precio||''}" data-idx="${i}" data-field="precio" oninput="ocItems[parseInt(this.dataset.idx)].precio=parseFloat(this.value)||0;calcTotals()">
-      <button class="btn-danger btn" onclick="removeItem(${i})">
+      <input id="item-cant-${i}" type="number" min="0" placeholder="Cant." value="${it.cantidad||''}">
+      <input id="item-prec-${i}" type="number" min="0" placeholder="Precio" value="${it.precio||''}">
+      <button class="btn-danger btn" id="item-del-${i}">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
       </button>
     </div>`).join('');
@@ -593,6 +592,7 @@ function renderOC(){
     </div>`;
 
   updateClienteSelect();
+  bindItemEvents();
   calcTotals();
 }
 
@@ -615,18 +615,44 @@ window.copiarEnvio = function(){
   document.getElementById('e-nit').value = document.getElementById('c-nit').value;
 };
 
-window.onItemProd = function(i, key){
-  const p = productos[key];
-  if(p){ ocItems[i].prodKey=key; ocItems[i].codigo=p.codigo; ocItems[i].articulo=p.articulo; ocItems[i].precio=p.precio||0; }
-  else { ocItems[i].prodKey=''; ocItems[i].codigo=''; ocItems[i].articulo=''; }
-  const row = document.getElementById('item-'+i);
-  if(row){
-    row.querySelector('.item-code').textContent = ocItems[i].codigo||'';
-    const priceInput = row.querySelectorAll('input')[1];
-    if(priceInput) priceInput.value = ocItems[i].precio||'';
-  }
-  calcTotals();
-};
+function bindItemEvents(){
+  ocItems.forEach((it, i)=>{
+    const selProd = document.getElementById('sel-prod-'+i);
+    const inpCant = document.getElementById('item-cant-'+i);
+    const inpPrec = document.getElementById('item-prec-'+i);
+    const btnDel  = document.getElementById('item-del-'+i);
+    const codeDiv = document.getElementById('item-code-'+i);
+
+    if(selProd) selProd.addEventListener('change', function(){
+      const key = this.value;
+      const p = productos[key];
+      if(p){
+        ocItems[i].prodKey=key; ocItems[i].codigo=p.codigo;
+        ocItems[i].articulo=p.articulo; ocItems[i].precio=p.precio||0;
+        if(inpPrec) inpPrec.value = p.precio||'';
+        if(codeDiv) codeDiv.textContent = p.codigo||'';
+      } else {
+        ocItems[i].prodKey=''; ocItems[i].codigo=''; ocItems[i].articulo='';
+      }
+      calcTotals();
+    });
+
+    if(inpCant) inpCant.addEventListener('input', function(){
+      ocItems[i].cantidad = parseFloat(this.value)||0;
+      calcTotals();
+    });
+
+    if(inpPrec) inpPrec.addEventListener('input', function(){
+      ocItems[i].precio = parseFloat(this.value)||0;
+      calcTotals();
+    });
+
+    if(btnDel) btnDel.addEventListener('click', function(){
+      ocItems.splice(i,1);
+      renderOC();
+    });
+  });
+}
 
 window.addItem = function(){
   ocItems.push({prodKey:'',codigo:'',articulo:'',cantidad:0,precio:0});
@@ -643,12 +669,6 @@ window.removeItem = function(i){
 };
 
 function calcTotals(){
-  // Sync from DOM to avoid stale closures
-  document.querySelectorAll('.item-row input[data-field]').forEach(inp=>{
-    const idx=parseInt(inp.dataset.idx);
-    const field=inp.dataset.field;
-    if(ocItems[idx]!==undefined) ocItems[idx][field]=parseFloat(inp.value)||0;
-  });
   let sub=0;
   ocItems.forEach(it=>{ sub+=(it.cantidad||0)*(it.precio||0); });
   const iva = sub*0.05;
