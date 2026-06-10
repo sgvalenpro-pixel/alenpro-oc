@@ -145,10 +145,15 @@ html,body{height:100%;background:var(--bg2);font-family:-apple-system,BlinkMacSy
 .copy-btn{font-size:12px;color:var(--text3);border:none;background:none;cursor:pointer;padding:4px 0;font-family:inherit}
 
 @media print{
-  body > *{display:none!important}
-  #print-area{display:block!important;position:fixed;inset:0;padding:20px;background:#fff;z-index:9999}
+  body > *{ display:none!important }
+  #print-area{
+    display:block!important;
+    position:fixed;inset:0;
+    padding:0;background:#fff;
+    z-index:9999;
+  }
 }
-#print-area{display:none}
+#print-area{ display:none }
 </style>
 </head>
 <body>
@@ -289,10 +294,71 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
 window.printOC = function(){
   const src = document.getElementById('preview-content');
   if(!src || !src.innerHTML.trim()){ toast('Abre la vista previa primero'); return; }
-  const printArea = document.getElementById('print-area');
-  printArea.innerHTML = src.innerHTML;
-  window.print();
-  setTimeout(()=>{ printArea.innerHTML=''; }, 1500);
+
+  // Abrir ventana nueva con el documento formateado para carta
+  // Funciona igual en PC y móvil
+  const docHtml = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orden de Compra</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  @page{
+    size: letter portrait;
+    margin: 12mm 10mm;
+  }
+  html, body{
+    width: 216mm;
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    color: #1a1a1a;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body{ padding: 0; }
+  table{ border-collapse: collapse; width: 100%; }
+  img{ max-width: 100%; display: block; }
+  @media screen{
+    body{
+      max-width: 216mm;
+      margin: 0 auto;
+      padding: 12mm 10mm;
+      min-height: 279mm;
+      box-shadow: 0 0 12px rgba(0,0,0,.15);
+    }
+  }
+  @media print{
+    body{ padding: 0; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+${src.innerHTML}
+<script>
+  window.onload = function(){
+    // En móvil mostrar botón, en desktop imprimir automático
+    if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
+      const btn = document.createElement('div');
+      btn.innerHTML = '<button onclick="window.print()" style="position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#1a1a1a;color:#f5c200;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.3)">⬇ Guardar / Compartir PDF</button>';
+      document.body.appendChild(btn);
+    } else {
+      window.print();
+    }
+  };
+<\/script>
+</body>
+</html>`;
+
+  const ventana = window.open('', '_blank', 'width=850,height=1100');
+  if(!ventana){
+    toast('Permite ventanas emergentes para generar el PDF');
+    return;
+  }
+  ventana.document.write(docHtml);
+  ventana.document.close();
 };
 
 // ─── FIREBASE LOAD ───────────────────────────────────────
