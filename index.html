@@ -684,125 +684,277 @@ window.limpiarOC = function(){
 };
 
 window.guardarOC = function(){
-  const empresa = document.getElementById('oc-cliente');
-  const empName = empresa.options[empresa.selectedIndex]?.text;
+  const empresaSel = document.getElementById('oc-cliente');
+  const empName = empresaSel.options[empresaSel.selectedIndex]?.text;
   if(!empName || empName==='— Seleccionar cliente —'){ toast('Selecciona un cliente'); return; }
-  if(ocItems.length===0 || !ocItems.some(it=>it.articulo&&it.cantidad>0)){ toast('Agrega al menos un producto'); return; }
-  const ocNum = parseInt(document.getElementById('oc-num').value)||getNextOC();
-  const fecha = document.getElementById('oc-fecha').value;
-  const promises = ocItems.filter(it=>it.articulo&&it.cantidad>0).map(it=>
-    push(ref(db,'oc_historico'), {oc:ocNum, fecha, empresa:empName, producto:it.articulo, cantidad:it.cantidad, precio:it.precio||0})
-  );
-  Promise.all(promises).then(()=>{
-    toast(`OC #${ocNum} guardada ✓`);
-    ocItems = [];
-    renderOC();
-  });
-};
+  const validItems = ocItems.filter(it=>it.articulo && it.cantidad>0);
+  if(validItems.length===0){ toast('Agrega al menos un producto con cantidad'); return; }
 
-window.previewOC = function(){
-  const empresa = document.getElementById('oc-cliente');
-  const empName = empresa.options[empresa.selectedIndex]?.text || '—';
-  const ocNum = document.getElementById('oc-num').value;
+  const ocNum = parseInt(document.getElementById('oc-num').value)||getNextOC();
   const fecha = document.getElementById('oc-fecha').value;
   const estado = document.getElementById('oc-estado').value;
   const pago = document.getElementById('oc-pago').value;
   const envio = document.getElementById('oc-envio').value;
   const comentarios = document.getElementById('oc-comentarios').value;
   const autorizado = document.getElementById('oc-autorizado').value;
+  const solicitante = document.getElementById('oc-solicitante').value;
   const cNit = document.getElementById('c-nit').value;
   const cCiudad = document.getElementById('c-ciudad').value;
   const cDir = document.getElementById('c-dir').value;
   const cTel = document.getElementById('c-tel').value;
+  const cEmail = document.getElementById('c-email').value;
   const eEmpresa = document.getElementById('e-empresa').value||empName;
   const eCiudad = document.getElementById('e-ciudad').value||cCiudad;
   const eDir = document.getElementById('e-dir').value||cDir;
   const eNit = document.getElementById('e-nit').value||cNit;
-  let sub=0,iva=0;
-  ocItems.forEach(it=>{ const s=(it.cantidad||0)*(it.precio||0); sub+=s; iva+=s*0.05; });
-  const rows = ocItems.filter(it=>it.articulo).map(it=>`
-    <tr><td>${it.codigo||''}</td><td>${it.articulo}</td>
-    <td style="text-align:right">${fmtNum(it.cantidad)}</td>
-    <td style="text-align:right">${fmt(it.precio)}</td>
-    <td style="text-align:right">${fmt((it.cantidad||0)*(it.precio||0))}</td></tr>`).join('');
+
+  // Snapshot completo de la OC para guardar
+  const ocData = {
+    oc: ocNum, fecha, empresa: empName,
+    estado, pago, envio, comentarios, autorizado, solicitante,
+    cliente: {nit:cNit, ciudad:cCiudad, dir:cDir, tel:cTel, email:cEmail},
+    enviarA: {empresa:eEmpresa, ciudad:eCiudad, dir:eDir, nit:eNit},
+    items: validItems.map(it=>({codigo:it.codigo||'', articulo:it.articulo, cantidad:it.cantidad, precio:it.precio||0}))
+  };
+
+  // Guardar en Firebase
+  push(ref(db,'oc_historico'), ocData).then(()=>{
+    toast(`OC #${ocNum} guardada ✓`);
+    // Mostrar vista previa para descargar PDF
+    buildPreview(ocData);
+    openModal('modal-preview');
+    // Limpiar para nueva OC
+    ocItems = [];
+    setTimeout(()=>renderOC(), 300);
+  }).catch(err=>{
+    toast('Error al guardar: '+err.message);
+    console.error(err);
+  });
+};
+
+// ─── buildPreview: construye el HTML del documento OC ──────
+function buildPreview(d){
+  // d puede ser el objeto ocData guardado, o construido desde el formulario
+  const items = d.items || ocItems.filter(it=>it.articulo);
+  let sub=0;
+  items.forEach(it=>{ sub+=(it.cantidad||0)*(it.precio||0); });
+  const iva = sub*0.05;
+  const rows = items.map(it=>`
+    <tr>
+      <td style="padding:5px 4px;border-bottom:1px solid #eee">${it.codigo||''}</td>
+      <td style="padding:5px 4px;border-bottom:1px solid #eee">${it.articulo}</td>
+      <td style="padding:5px 4px;border-bottom:1px solid #eee;text-align:right">${fmtNum(it.cantidad)}</td>
+      <td style="padding:5px 4px;border-bottom:1px solid #eee;text-align:right">${fmt(it.precio)}</td>
+      <td style="padding:5px 4px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${fmt((it.cantidad||0)*(it.precio||0))}</td>
+    </tr>`).join('');
+
+  const c = d.cliente||{};
+  const e = d.enviarA||{};
+
   document.getElementById('preview-content').innerHTML = `
-    <div class="preview-header">
-      <div class="preview-logo">ALEN+PRO</div>
-      <div style="font-size:11px;color:#666">NIT: 800.183.642-5 · Puerto Caldas, Pereira · comercial@alenpro.co</div>
-      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px">
-        <strong>ORDEN DE PEDIDO PARA VENTA</strong>
-        <span><strong>OC# ${ocNum}</strong> · ${fecha} · <span style="background:#eff6ff;color:#1d4ed8;padding:2px 6px;border-radius:4px;font-size:10px">${estado}</span></span>
+    <div style="font-family:-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#1a1a1a">
+      <div style="border-bottom:2px solid #1a1a1a;padding-bottom:10px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:20px;font-weight:700;letter-spacing:-0.5px">ALEN+PRO</div>
+            <div style="font-size:10px;color:#666;margin-top:2px">NIT: 800.183.642-5 · comercial@alenpro.co · 310 395 20 58</div>
+            <div style="font-size:10px;color:#666">Puerto Caldas, Paraje La Marina - Cra 4 #23-02, Pereira</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px;font-weight:600">ORDEN DE PEDIDO</div>
+            <div style="font-size:18px;font-weight:700;color:#1d4ed8">OC# ${d.oc}</div>
+            <div style="font-size:11px;color:#666">${d.fecha||''}</div>
+            <div style="display:inline-block;background:#eff6ff;color:#1d4ed8;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;margin-top:2px">${d.estado||'PRO-FORMA'}</div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="preview-section">
-      <div class="preview-box"><strong>Cliente</strong>${empName}<br>${cDir||'—'}<br>${cCiudad||'—'} · NIT: ${cNit||'—'}<br>Tel: ${cTel||'—'}</div>
-      <div class="preview-box"><strong>Enviar a</strong>${eEmpresa}<br>${eDir||'—'}<br>${eCiudad||'—'} · NIT: ${eNit||'—'}</div>
-    </div>
-    <div style="font-size:11px;margin-bottom:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-      <div><strong style="display:block;font-size:10px;color:#999">Solicitado por</strong>${document.getElementById('oc-solicitante').value||'—'}</div>
-      <div><strong style="display:block;font-size:10px;color:#999">Pago</strong>${pago}</div>
-      <div><strong style="display:block;font-size:10px;color:#999">Envío</strong>${envio}</div>
-    </div>
-    <table class="preview-table">
-      <thead><tr><th>Cód.</th><th>Producto</th><th style="text-align:right">Cant.</th><th style="text-align:right">Precio</th><th style="text-align:right">Subtotal</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="preview-totals">
-      <div><span>Subtotal sin IVA</span><span>${fmt(sub)}</span></div>
-      <div><span>IVA (5%)</span><span>${fmt(iva)}</span></div>
-      <div class="main-total"><span>TOTAL</span><span>${fmt(sub+iva)}</span></div>
-    </div>
-    ${comentarios?`<div style="font-size:11px;color:#666;margin-top:8px;border-top:1px solid #eee;padding-top:8px"><strong>Comentarios:</strong> ${comentarios}</div>`:''}
-    <div style="font-size:10px;color:#999;margin-top:10px;border-top:1px solid #eee;padding-top:8px;text-align:center">
-      Autorizado por: ${autorizado} · 310 395 20 58 - 311 521 45 88<br>
-      info@alenpro.co · comercial@alenpro.co · Puerto Caldas, Paraje La Marina - Cra 4 # 23-02
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="border:1px solid #e0e0dd;border-radius:8px;padding:10px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#999;margin-bottom:4px">Cliente</div>
+          <div style="font-weight:600">${d.empresa||'—'}</div>
+          <div style="color:#555">${c.dir||'—'}</div>
+          <div style="color:#555">${c.ciudad||'—'}</div>
+          <div style="color:#555">NIT: ${c.nit||'—'}</div>
+          <div style="color:#555">Tel: ${c.tel||'—'}</div>
+        </div>
+        <div style="border:1px solid #e0e0dd;border-radius:8px;padding:10px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#999;margin-bottom:4px">Enviar a</div>
+          <div style="font-weight:600">${e.empresa||d.empresa||'—'}</div>
+          <div style="color:#555">${e.dir||'—'}</div>
+          <div style="color:#555">${e.ciudad||'—'}</div>
+          <div style="color:#555">NIT: ${e.nit||'—'}</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px;font-size:11px;background:#f7f7f5;border-radius:6px;padding:8px">
+        <div><div style="color:#999;font-size:10px;font-weight:600;text-transform:uppercase">Solicitado por</div>${d.solicitante||'—'}</div>
+        <div><div style="color:#999;font-size:10px;font-weight:600;text-transform:uppercase">Pago</div>${d.pago||'—'}</div>
+        <div><div style="color:#999;font-size:10px;font-weight:600;text-transform:uppercase">Envío</div>${d.envio||'—'}</div>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px">
+        <thead>
+          <tr style="background:#f0f0ee">
+            <th style="padding:6px 4px;text-align:left;font-size:10px;text-transform:uppercase;color:#666;border-bottom:1px solid #ccc">Cód.</th>
+            <th style="padding:6px 4px;text-align:left;font-size:10px;text-transform:uppercase;color:#666;border-bottom:1px solid #ccc">Producto</th>
+            <th style="padding:6px 4px;text-align:right;font-size:10px;text-transform:uppercase;color:#666;border-bottom:1px solid #ccc">Cantidad</th>
+            <th style="padding:6px 4px;text-align:right;font-size:10px;text-transform:uppercase;color:#666;border-bottom:1px solid #ccc">Precio</th>
+            <th style="padding:6px 4px;text-align:right;font-size:10px;text-transform:uppercase;color:#666;border-bottom:1px solid #ccc">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <div style="min-width:200px;font-size:12px">
+          <div style="display:flex;justify-content:space-between;padding:3px 0;color:#555"><span>Subtotal sin IVA</span><span>${fmt(sub)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;color:#555"><span>IVA (5%)</span><span>${fmt(iva)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0 3px;border-top:2px solid #1a1a1a;font-size:15px;font-weight:700"><span>TOTAL</span><span>${fmt(sub+iva)}</span></div>
+        </div>
+      </div>
+
+      ${d.comentarios?`<div style="font-size:11px;color:#555;margin-bottom:10px;padding:8px;background:#f7f7f5;border-radius:6px"><strong>Comentarios:</strong> ${d.comentarios}</div>`:''}
+
+      <div style="border-top:1px solid #e0e0dd;padding-top:8px;font-size:10px;color:#999;text-align:center">
+        Autorizado por: <strong style="color:#555">${d.autorizado||'SAMUEL GUTIERREZ V'}</strong><br>
+        310 395 20 58 · 311 521 45 88 · info@alenpro.co · comercial@alenpro.co
+      </div>
     </div>`;
+}
+
+window.previewOC = function(){
+  const empresaSel = document.getElementById('oc-cliente');
+  const empName = empresaSel.options[empresaSel.selectedIndex]?.text || '—';
+  const cNit = document.getElementById('c-nit').value;
+  const cCiudad = document.getElementById('c-ciudad').value;
+  const cDir = document.getElementById('c-dir').value;
+  const cTel = document.getElementById('c-tel').value;
+  const cEmail = document.getElementById('c-email').value;
+  const eEmpresa = document.getElementById('e-empresa').value||empName;
+  const d = {
+    oc: document.getElementById('oc-num').value,
+    fecha: document.getElementById('oc-fecha').value,
+    estado: document.getElementById('oc-estado').value,
+    pago: document.getElementById('oc-pago').value,
+    envio: document.getElementById('oc-envio').value,
+    comentarios: document.getElementById('oc-comentarios').value,
+    autorizado: document.getElementById('oc-autorizado').value,
+    solicitante: document.getElementById('oc-solicitante').value,
+    empresa: empName,
+    cliente: {nit:cNit, ciudad:cCiudad, dir:cDir, tel:cTel, email:cEmail},
+    enviarA: {
+      empresa: eEmpresa,
+      ciudad: document.getElementById('e-ciudad').value||cCiudad,
+      dir: document.getElementById('e-dir').value||cDir,
+      nit: document.getElementById('e-nit').value||cNit
+    },
+    items: ocItems.filter(it=>it.articulo)
+  };
+  buildPreview(d);
   openModal('modal-preview');
 };
 
 // ─── HISTORICO ───────────────────────────────────────────
-function renderHistorico(filter=''){
-  const list = Object.entries(historico)
-    .map(([k,h])=>({...h,key:k}))
-    .filter(h=> !filter || JSON.stringify(h).toLowerCase().includes(filter.toLowerCase()))
-    .sort((a,b)=>(b.oc||0)-(a.oc||0));
+function renderHistorico(filter){
+  if(filter===undefined) filter = document.getElementById('hist-search')?.value||'';
+  const q = filter.toLowerCase().trim();
 
-  if(list.length===0){
-    document.getElementById('content').innerHTML = `
-      <div class="search-wrap">
-        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input class="search-input" placeholder="Buscar OC, cliente, producto..." oninput="renderHistorico(this.value)">
-      </div>
-      <div class="empty"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>Sin resultados</p></div>`;
-    return;
-  }
+  // Cada entrada puede ser formato nuevo (con .items) o legado (fila plana)
+  const entries = Object.entries(historico).map(([k,h])=>({...h,key:k}));
 
-  // Agrupar por OC
-  const grouped = {};
-  list.forEach(h=>{
-    if(!grouped[h.oc]) grouped[h.oc]={oc:h.oc,fecha:h.fecha,empresa:h.empresa,items:[],total:0};
-    grouped[h.oc].items.push(h);
-    grouped[h.oc].total += (h.cantidad||0)*(h.precio||0);
+  // Normalizar: si tiene .items es formato nuevo; si no, convertir a formato nuevo
+  const normalized = entries.map(h=>{
+    if(h.items && Array.isArray(h.items)){
+      return h; // formato nuevo
+    }
+    // formato legado: fila plana con producto/cantidad/precio
+    return {
+      key: h.key, oc: h.oc, fecha: h.fecha, empresa: h.empresa,
+      estado: h.estado||'', pago: h.pago||'', envio: h.envio||'',
+      comentarios: h.comentarios||'', autorizado: h.autorizado||'',
+      solicitante: h.solicitante||'',
+      cliente: h.cliente||{},
+      enviarA: h.enviarA||{},
+      items: [{codigo:'', articulo:h.producto||'', cantidad:h.cantidad||0, precio:h.precio||0}]
+    };
   });
 
-  const html = Object.values(grouped).sort((a,b)=>b.oc-a.oc).map(g=>`
-    <div class="hist-item">
-      <div class="hist-top">
-        <span class="badge badge-oc">OC-${g.oc}</span>
-        <span style="font-size:11px;color:#999;margin:0 8px;flex:1">${g.fecha||''}</span>
-        <span class="hist-total">${fmt(g.total*1.05)}</span>
-      </div>
-      <div class="hist-empresa">${g.empresa}</div>
-      <div class="hist-detail">${g.items.map(i=>`${i.producto} · ${fmtNum(i.cantidad)} kg · ${fmt(i.precio)}`).join('<br>')}</div>
-    </div>`).join('');
+  // Agrupar por número de OC (puede haber varias entradas legacy por OC)
+  const grouped = {};
+  normalized.forEach(h=>{
+    const key = h.oc;
+    if(!grouped[key]){
+      grouped[key] = {...h};
+    } else {
+      // Merge items si es legacy duplicado
+      grouped[key].items = [...(grouped[key].items||[]), ...(h.items||[])];
+    }
+  });
+
+  let list = Object.values(grouped).sort((a,b)=>(b.oc||0)-(a.oc||0));
+
+  // Filtrar
+  if(q){
+    list = list.filter(h=>{
+      const searchable = [
+        String(h.oc), h.empresa, h.fecha,
+        (h.items||[]).map(i=>i.articulo+' '+i.codigo).join(' ')
+      ].join(' ').toLowerCase();
+      return searchable.includes(q);
+    });
+  }
+
+  const buildCard = (g)=>{
+    let sub=0;
+    (g.items||[]).forEach(it=>{ sub+=(it.cantidad||0)*(it.precio||0); });
+    const total = sub*1.05;
+    const itemLines = (g.items||[]).map(it=>
+      `<div style="display:flex;justify-content:space-between;font-size:12px;color:#555;padding:2px 0">
+        <span>${it.articulo||'—'}${it.codigo?' <span style="color:#999">('+it.codigo+')</span>':''}</span>
+        <span style="white-space:nowrap;margin-left:8px">${fmtNum(it.cantidad)} kg · ${fmt(it.precio)}</span>
+      </div>`).join('');
+    return `
+      <div class="hist-item" style="cursor:pointer" onclick="verOCHistorico('${g.key}')">
+        <div class="hist-top">
+          <span class="badge badge-oc">OC-${g.oc}</span>
+          <span style="font-size:11px;color:#999;margin:0 8px;flex:1">${g.fecha||''} ${g.empresa?'· '+g.empresa:''}</span>
+          <span class="hist-total">${fmt(total)}</span>
+        </div>
+        <div class="hist-empresa">${g.empresa||'—'}</div>
+        <div style="margin-top:4px">${itemLines}</div>
+        ${g.estado?`<div style="margin-top:6px"><span class="badge" style="background:#eff6ff;color:#1d4ed8">${g.estado}</span></div>`:''}
+      </div>`;
+  };
+
+  const html = list.length ? list.map(buildCard).join('') :
+    `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>Sin resultados</p></div>`;
 
   document.getElementById('content').innerHTML = `
     <div class="search-wrap">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input class="search-input" placeholder="Buscar OC, cliente, producto..." oninput="renderHistorico(this.value)" value="${filter}">
+      <input id="hist-search" class="search-input" placeholder="Buscar por OC#, cliente, producto..." value="${filter}">
     </div>
     ${html}`;
+
+  // Bind buscador después de insertar en DOM
+  const searchEl = document.getElementById('hist-search');
+  if(searchEl) searchEl.addEventListener('input', function(){ renderHistorico(this.value); });
 }
+
+window.verOCHistorico = function(key){
+  // Buscar la OC en el histórico y mostrar preview
+  const entries = Object.entries(historico).map(([k,h])=>({...h,key:k}));
+  let h = entries.find(e=>e.key===key);
+  if(!h) return;
+  // Normalizar si es legacy
+  if(!h.items || !Array.isArray(h.items)){
+    h = { ...h, items:[{codigo:'', articulo:h.producto||'', cantidad:h.cantidad||0, precio:h.precio||0}] };
+  }
+  buildPreview(h);
+  openModal('modal-preview');
+};
+
 window.renderHistorico = renderHistorico;
 
 // ─── CLIENTES ────────────────────────────────────────────
