@@ -144,13 +144,14 @@ html,body{height:100%;background:var(--bg2);font-family:-apple-system,BlinkMacSy
 .copy-btn{font-size:12px;color:var(--text3);border:none;background:none;cursor:pointer;padding:4px 0;font-family:inherit}
 
 @media print{
-  .header,.nav,.btn-row,.btn,.modal-overlay,.toast{display:none!important}
-  .content{padding:0}
-  .card{border:none;box-shadow:none;margin:0}
+  body > *{display:none!important}
+  #print-area{display:block!important;position:fixed;inset:0;padding:20px;background:#fff;z-index:9999}
 }
+#print-area{display:none}
 </style>
 </head>
 <body>
+<div id="print-area"></div>
 <div class="app">
   <div class="header">
     <div class="header-logo">ALEN<span>+PRO</span></div>
@@ -227,9 +228,9 @@ html,body{height:100%;background:var(--bg2);font-family:-apple-system,BlinkMacSy
     <div id="preview-content" class="preview"></div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('modal-preview')">Cerrar</button>
-      <button class="btn btn-primary" onclick="window.print()">
+      <button class="btn btn-primary" onclick="printOC()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        Imprimir / PDF
+        Descargar / Compartir PDF
       </button>
     </div>
   </div>
@@ -282,6 +283,16 @@ window.closeModal = closeModal;
 document.querySelectorAll('.modal-overlay').forEach(m=>{
   m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('open'); });
 });
+
+// ─── PRINT / PDF ─────────────────────────────────────────
+window.printOC = function(){
+  const src = document.getElementById('preview-content');
+  if(!src || !src.innerHTML.trim()){ toast('Abre la vista previa primero'); return; }
+  const printArea = document.getElementById('print-area');
+  printArea.innerHTML = src.innerHTML;
+  window.print();
+  setTimeout(()=>{ printArea.innerHTML=''; }, 1500);
+};
 
 // ─── FIREBASE LOAD ───────────────────────────────────────
 function initData(){
