@@ -564,10 +564,10 @@ function updateClienteSelect(){
   if(cur) sel.value = cur;
 }
 
-function renderOC(){
+function buildItemsHTML(){
   const prodSorted = Object.entries(productos).sort((a,b)=>a[1].articulo.localeCompare(b[1].articulo));
 
-  let itemsHTML = ocItems.map((it,i)=>`
+  return ocItems.map((it,i)=>`
     <div class="item-row" id="item-${i}">
       <div class="item-prod">
         <select id="sel-prod-${i}">
@@ -582,7 +582,17 @@ function renderOC(){
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
       </button>
     </div>`).join('');
+}
 
+function renderItems(){
+  const body = document.getElementById('items-body');
+  if(!body) return;
+  body.innerHTML = buildItemsHTML();
+  bindItemEvents();
+  calcTotals();
+}
+
+function renderOC(){
   document.getElementById('content').innerHTML = `
     <div class="card">
       <div class="grid2">
@@ -645,7 +655,7 @@ function renderOC(){
       <div class="items-header">
         <span>Producto</span><span>Cant.</span><span>Precio</span><span></span>
       </div>
-      <div id="items-body">${itemsHTML}</div>
+      <div id="items-body">${buildItemsHTML()}</div>
       <button class="btn btn-block" style="margin-top:10px" onclick="addItem()">+ Agregar producto</button>
 
       <div class="totals" style="margin-top:12px">
@@ -728,14 +738,14 @@ function bindItemEvents(){
 
     if(btnDel) btnDel.addEventListener('click', function(){
       ocItems.splice(i,1);
-      renderOC();
+      renderItems();
     });
   });
 }
 
 window.addItem = function(){
   ocItems.push({prodKey:'',codigo:'',articulo:'',cantidad:0,precio:0});
-  renderOC();
+  renderItems();
   setTimeout(()=>{
     const rows = document.querySelectorAll('.item-row');
     if(rows.length) rows[rows.length-1].scrollIntoView({behavior:'smooth',block:'center'});
@@ -744,7 +754,7 @@ window.addItem = function(){
 
 window.removeItem = function(i){
   ocItems.splice(i,1);
-  renderOC();
+  renderItems();
 };
 
 function calcTotals(){
