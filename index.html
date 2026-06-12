@@ -268,6 +268,17 @@ let clientes = {};
 let productos = {};
 let historico = {};
 let ocItems = [];
+function defaultFormState(){
+  return {
+    ocNum:'', fecha:'', estado:'PRO-FORMA',
+    clienteKey:'', empresaNombre:'',
+    cliente:{nit:'',ciudad:'',dir:'',tel:'',email:''},
+    enviarA:{empresa:'',ciudad:'',dir:'',nit:''},
+    solicitante:'', pago:'CONTADO', envio:'RECOGE CLIENTE.',
+    comentarios:'', autorizado:'SAMUEL GUTIERREZ V'
+  };
+}
+let ocFormState = defaultFormState();
 let currentTab = 'oc';
 let editingClienteKey = null;
 let editingProductoKey = null;
@@ -592,7 +603,69 @@ function renderItems(){
   calcTotals();
 }
 
-function renderOC(){
+// ─── FORM STATE: preserva cliente/enviar a/condiciones entre renders ───
+function saveFormState(){
+  const v = id => { const e=document.getElementById(id); return e ? e.value : undefined; };
+  const set = (obj, key, val) => { if(val!==undefined) obj[key]=val; };
+
+  set(ocFormState, 'ocNum', v('oc-num'));
+  set(ocFormState, 'fecha', v('oc-fecha'));
+  set(ocFormState, 'estado', v('oc-estado'));
+
+  const clienteSel = document.getElementById('oc-cliente');
+  if(clienteSel){
+    ocFormState.clienteKey = clienteSel.value;
+    ocFormState.empresaNombre = clienteSel.options[clienteSel.selectedIndex]?.text || '';
+  }
+
+  set(ocFormState.cliente, 'nit', v('c-nit'));
+  set(ocFormState.cliente, 'ciudad', v('c-ciudad'));
+  set(ocFormState.cliente, 'dir', v('c-dir'));
+  set(ocFormState.cliente, 'tel', v('c-tel'));
+  set(ocFormState.cliente, 'email', v('c-email'));
+
+  set(ocFormState.enviarA, 'empresa', v('e-empresa'));
+  set(ocFormState.enviarA, 'ciudad', v('e-ciudad'));
+  set(ocFormState.enviarA, 'dir', v('e-dir'));
+  set(ocFormState.enviarA, 'nit', v('e-nit'));
+
+  set(ocFormState, 'solicitante', v('oc-solicitante'));
+  set(ocFormState, 'pago', v('oc-pago'));
+  set(ocFormState, 'envio', v('oc-envio'));
+  set(ocFormState, 'comentarios', v('oc-comentarios'));
+  set(ocFormState, 'autorizado', v('oc-autorizado'));
+}
+
+function restoreFormState(){
+  const set = (id, val) => { const e=document.getElementById(id); if(e && val) e.value = val; };
+
+  set('oc-num', ocFormState.ocNum);
+  set('oc-fecha', ocFormState.fecha);
+  set('oc-estado', ocFormState.estado);
+
+  const clienteSel = document.getElementById('oc-cliente');
+  if(clienteSel && ocFormState.clienteKey) clienteSel.value = ocFormState.clienteKey;
+
+  set('c-nit', ocFormState.cliente.nit);
+  set('c-ciudad', ocFormState.cliente.ciudad);
+  set('c-dir', ocFormState.cliente.dir);
+  set('c-tel', ocFormState.cliente.tel);
+  set('c-email', ocFormState.cliente.email);
+
+  set('e-empresa', ocFormState.enviarA.empresa);
+  set('e-ciudad', ocFormState.enviarA.ciudad);
+  set('e-dir', ocFormState.enviarA.dir);
+  set('e-nit', ocFormState.enviarA.nit);
+
+  set('oc-solicitante', ocFormState.solicitante);
+  set('oc-pago', ocFormState.pago);
+  set('oc-envio', ocFormState.envio);
+  set('oc-comentarios', ocFormState.comentarios);
+  set('oc-autorizado', ocFormState.autorizado);
+}
+
+function renderOC(preserveState=true){
+  if(preserveState) saveFormState();
   document.getElementById('content').innerHTML = `
     <div class="card">
       <div class="grid2">
@@ -681,6 +754,7 @@ function renderOC(){
     </div>`;
 
   updateClienteSelect();
+  restoreFormState();
   bindItemEvents();
   calcTotals();
 }
@@ -737,15 +811,19 @@ function bindItemEvents(){
     });
 
     if(btnDel) btnDel.addEventListener('click', function(){
+      saveFormState();
       ocItems.splice(i,1);
       renderItems();
+      restoreFormState();
     });
   });
 }
 
 window.addItem = function(){
+  saveFormState();
   ocItems.push({prodKey:'',codigo:'',articulo:'',cantidad:0,precio:0});
   renderItems();
+  restoreFormState();
   setTimeout(()=>{
     const rows = document.querySelectorAll('.item-row');
     if(rows.length) rows[rows.length-1].scrollIntoView({behavior:'smooth',block:'center'});
@@ -753,8 +831,10 @@ window.addItem = function(){
 };
 
 window.removeItem = function(i){
+  saveFormState();
   ocItems.splice(i,1);
   renderItems();
+  restoreFormState();
 };
 
 function calcTotals(){
@@ -769,7 +849,8 @@ function calcTotals(){
 
 window.limpiarOC = function(){
   ocItems = [];
-  renderOC();
+  ocFormState = defaultFormState();
+  renderOC(false);
 };
 
 window.guardarOC = function(){
@@ -814,7 +895,8 @@ window.guardarOC = function(){
     openModal('modal-preview');
     // Limpiar para nueva OC
     ocItems = [];
-    setTimeout(()=>renderOC(), 300);
+    ocFormState = defaultFormState();
+    setTimeout(()=>renderOC(false), 300);
   }).catch(err=>{
     toast('Error al guardar: '+err.message);
     console.error(err);
@@ -913,30 +995,26 @@ function buildPreview(d){
 }
 
 window.previewOC = function(){
-  const empresaSel = document.getElementById('oc-cliente');
-  const empName = empresaSel.options[empresaSel.selectedIndex]?.text || '—';
-  const cNit = document.getElementById('c-nit').value;
-  const cCiudad = document.getElementById('c-ciudad').value;
-  const cDir = document.getElementById('c-dir').value;
-  const cTel = document.getElementById('c-tel').value;
-  const cEmail = document.getElementById('c-email').value;
-  const eEmpresa = document.getElementById('e-empresa').value||empName;
+  saveFormState();
+  const empName = ocFormState.empresaNombre || '—';
+  const c = ocFormState.cliente;
+  const e = ocFormState.enviarA;
   const d = {
-    oc: document.getElementById('oc-num').value,
-    fecha: document.getElementById('oc-fecha').value,
-    estado: document.getElementById('oc-estado').value,
-    pago: document.getElementById('oc-pago').value,
-    envio: document.getElementById('oc-envio').value,
-    comentarios: document.getElementById('oc-comentarios').value,
-    autorizado: document.getElementById('oc-autorizado').value,
-    solicitante: document.getElementById('oc-solicitante').value,
+    oc: ocFormState.ocNum,
+    fecha: ocFormState.fecha,
+    estado: ocFormState.estado,
+    pago: ocFormState.pago,
+    envio: ocFormState.envio,
+    comentarios: ocFormState.comentarios,
+    autorizado: ocFormState.autorizado,
+    solicitante: ocFormState.solicitante,
     empresa: empName,
-    cliente: {nit:cNit, ciudad:cCiudad, dir:cDir, tel:cTel, email:cEmail},
+    cliente: {nit:c.nit, ciudad:c.ciudad, dir:c.dir, tel:c.tel, email:c.email},
     enviarA: {
-      empresa: eEmpresa,
-      ciudad: document.getElementById('e-ciudad').value||cCiudad,
-      dir: document.getElementById('e-dir').value||cDir,
-      nit: document.getElementById('e-nit').value||cNit
+      empresa: e.empresa||empName,
+      ciudad: e.ciudad||c.ciudad,
+      dir: e.dir||c.dir,
+      nit: e.nit||c.nit
     },
     items: ocItems.filter(it=>it.articulo)
   };
