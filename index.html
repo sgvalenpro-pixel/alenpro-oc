@@ -600,7 +600,7 @@ window.switchTab = function(tab){
   currentTab = tab;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
-  document.getElementById('oc-search-card').style.display = tab==='oc' ? '' : 'none';
+  document.getElementById('oc-search-card').style.display = tab==='oc' ? 'block' : 'none';
   if(tab==='oc') renderOC();
   else if(tab==='historico') renderHistorico();
   else if(tab==='clientes') renderClientes();
@@ -783,7 +783,7 @@ function renderOC(preserveState=true){
       <button class="btn btn-primary" onclick="guardarOC()">Guardar OC</button>
     </div>`;
 
-  document.getElementById('oc-search-card').style.display = '';
+  document.getElementById('oc-search-card').style.display = 'block';
   restoreFormState();
   // Para formularios nuevos, leer OC# directamente desde Firebase
   // para evitar race condition en móvil (Firebase puede no haber respondido aún)
