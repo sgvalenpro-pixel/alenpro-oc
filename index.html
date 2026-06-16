@@ -559,11 +559,7 @@ function seedHistorico(){
 
 // ─── NEXT OC NUMBER ──────────────────────────────────────
 function getNextOC(){
-  if(ultimoNumOC > 0){
-    const nums = Object.values(historico).map(h=>h.oc||0);
-    const maxHistorico = nums.length ? Math.max(...nums) : 0;
-    return Math.max(ultimoNumOC, maxHistorico) + 1;
-  }
+  if(ultimoNumOC > 0) return ultimoNumOC + 1;
   const nums = Object.values(historico).map(h=>h.oc||0);
   return nums.length ? Math.max(...nums)+1 : 504;
 }
@@ -770,6 +766,16 @@ function renderOC(preserveState=true){
 
   updateClienteSelect();
   restoreFormState();
+  // Para formularios nuevos, leer OC# directamente desde Firebase
+  // para evitar race condition en móvil (Firebase puede no haber respondido aún)
+  if(!ocFormState.ocNum){
+    get(ref(db,'oc_config/ultimo_numero')).then(snap=>{
+      const num = snap.exists() ? snap.val() : 0;
+      if(num > 0) ultimoNumOC = num;
+      const inp = document.getElementById('oc-num');
+      if(inp && !ocFormState.ocNum) inp.value = getNextOC();
+    });
+  }
   bindItemEvents();
   calcTotals();
 }
