@@ -192,6 +192,16 @@ html,body{height:100%;background:var(--bg2);font-family:-apple-system,BlinkMacSy
       Productos
     </button>
   </nav>
+  <!-- Buscador de cliente — elemento estático fuera de #content para evitar pérdida de foco -->
+  <div id="oc-search-card" class="card" style="display:none">
+    <div class="card-title">Cliente</div>
+    <div class="field cliente-search-wrap">
+      <label>Empresa</label>
+      <input id="cliente-search" type="text" placeholder="Buscar cliente..." autocomplete="off">
+      <div id="cliente-dropdown" class="cliente-dropdown"></div>
+    </div>
+    <input type="hidden" id="oc-cliente-key">
+  </div>
 
   <div class="content" id="content">
     <div class="loading"><div class="spinner"></div>Conectando...</div>
@@ -590,6 +600,7 @@ window.switchTab = function(tab){
   currentTab = tab;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('oc-search-card').style.display = tab==='oc' ? '' : 'none';
   if(tab==='oc') renderOC();
   else if(tab==='historico') renderHistorico();
   else if(tab==='clientes') renderClientes();
@@ -597,32 +608,6 @@ window.switchTab = function(tab){
 };
 
 // ─── OC PANEL ────────────────────────────────────────────
-function bindClienteSearch(){
-  const inp = document.getElementById('oc-cliente-search');
-  const dd  = document.getElementById('cliente-dropdown');
-  if(!inp || !dd) return;
-
-  function showDD(q){
-    if(!q){ dd.classList.remove('open'); return; }
-    const matches = Object.entries(clientes)
-      .filter(([,c]) => c.empresa.toLowerCase().includes(q.toLowerCase()))
-      .sort((a,b) => a[1].empresa.localeCompare(b[1].empresa))
-      .slice(0, 25);
-    if(!matches.length){ dd.classList.remove('open'); return; }
-    dd.innerHTML = matches.map(([k,c]) =>
-      `<div class="cliente-dd-item" data-key="${k}">${c.empresa}</div>`
-    ).join('');
-    dd.classList.add('open');
-    dd.querySelectorAll('.cliente-dd-item').forEach(item => {
-      item.addEventListener('mousedown', e => { e.preventDefault(); selectCliente(item.dataset.key); });
-      item.addEventListener('touchstart', () => item.classList.add('pressing'), {passive:true});
-      item.addEventListener('touchend', () => { item.classList.remove('pressing'); selectCliente(item.dataset.key); });
-    });
-  }
-
-  inp.addEventListener('input', () => showDD(inp.value));
-  inp.addEventListener('focus', () => { if(inp.value) showDD(inp.value); });
-}
 
 function buildItemsHTML(){
   const prodSorted = Object.entries(productos).sort((a,b)=>a[1].articulo.localeCompare(b[1].articulo));
@@ -662,7 +647,7 @@ function saveFormState(){
   set(ocFormState, 'estado', v('oc-estado'));
 
   const keyInp = document.getElementById('oc-cliente-key');
-  const searchInp = document.getElementById('oc-cliente-search');
+  const searchInp = document.getElementById('cliente-search');
   if(keyInp) ocFormState.clienteKey = keyInp.value;
   if(searchInp) ocFormState.empresaNombre = searchInp.value;
 
@@ -692,7 +677,7 @@ function restoreFormState(){
   set('oc-estado', ocFormState.estado);
 
   const keyInp = document.getElementById('oc-cliente-key');
-  const searchInp = document.getElementById('oc-cliente-search');
+  const searchInp = document.getElementById('cliente-search');
   if(keyInp && ocFormState.clienteKey) keyInp.value = ocFormState.clienteKey;
   if(searchInp && ocFormState.empresaNombre) searchInp.value = ocFormState.empresaNombre;
 
@@ -730,12 +715,7 @@ function renderOC(preserveState=true){
     </div>
 
     <div class="card">
-      <div class="card-title">Cliente</div>
-      <div class="field cliente-search-wrap"><label>Empresa</label>
-        <input id="oc-cliente-search" type="text" placeholder="Buscar cliente..." autocomplete="off">
-        <input type="hidden" id="oc-cliente-key">
-        <div id="cliente-dropdown" class="cliente-dropdown"></div>
-      </div>
+      <div class="card-title">Datos del cliente</div>
       <div class="grid2">
         <div class="field"><label>NIT</label><input id="c-nit" type="text"></div>
         <div class="field"><label>Ciudad</label><input id="c-ciudad" type="text"></div>
@@ -803,7 +783,7 @@ function renderOC(preserveState=true){
       <button class="btn btn-primary" onclick="guardarOC()">Guardar OC</button>
     </div>`;
 
-  bindClienteSearch();
+  document.getElementById('oc-search-card').style.display = '';
   restoreFormState();
   // Para formularios nuevos, leer OC# directamente desde Firebase
   // para evitar race condition en móvil (Firebase puede no haber respondido aún)
@@ -822,9 +802,11 @@ function renderOC(preserveState=true){
 window.selectCliente = function(key){
   const c = clientes[key];
   if(!c) return;
-  document.getElementById('oc-cliente-search').value = c.empresa;
+  document.getElementById('cliente-search').value = c.empresa;
   document.getElementById('oc-cliente-key').value = key;
   document.getElementById('cliente-dropdown').classList.remove('open');
+  ocFormState.clienteKey = key;
+  ocFormState.empresaNombre = c.empresa;
   document.getElementById('c-nit').value = c.nit||'';
   document.getElementById('c-ciudad').value = c.ciudad||'';
   document.getElementById('c-dir').value = c.dir||'';
@@ -834,7 +816,7 @@ window.selectCliente = function(key){
 };
 
 window.copiarEnvio = function(){
-  document.getElementById('e-empresa').value = document.getElementById('oc-cliente-search')?.value||'';
+  document.getElementById('e-empresa').value = document.getElementById('cliente-search')?.value||'';
   document.getElementById('e-ciudad').value = document.getElementById('c-ciudad').value;
   document.getElementById('e-dir').value = document.getElementById('c-dir').value;
   document.getElementById('e-nit').value = document.getElementById('c-nit').value;
@@ -912,12 +894,15 @@ function calcTotals(){
 window.limpiarOC = function(){
   ocItems = [];
   ocFormState = defaultFormState();
+  const si = document.getElementById('cliente-search'); if(si) si.value = '';
+  const ki = document.getElementById('oc-cliente-key'); if(ki) ki.value = '';
+  const dd = document.getElementById('cliente-dropdown'); if(dd) dd.classList.remove('open');
   renderOC(false);
 };
 
 window.guardarOC = function(){
   const clienteKey = document.getElementById('oc-cliente-key')?.value||'';
-  const empName = (document.getElementById('oc-cliente-search')?.value||'').trim();
+  const empName = (document.getElementById('cliente-search')?.value||'').trim();
   if(!clienteKey || !empName){ toast('Selecciona un cliente de la lista'); return; }
   const validItems = ocItems.filter(it=>it.articulo && it.cantidad>0);
   if(validItems.length===0){ toast('Agrega al menos un producto con cantidad'); return; }
@@ -960,6 +945,9 @@ window.guardarOC = function(){
     // Limpiar para nueva OC
     ocItems = [];
     ocFormState = defaultFormState();
+    const si = document.getElementById('cliente-search'); if(si) si.value = '';
+    const ki = document.getElementById('oc-cliente-key'); if(ki) ki.value = '';
+    const dd2 = document.getElementById('cliente-dropdown'); if(dd2) dd2.classList.remove('open');
     setTimeout(()=>renderOC(false), 300);
   }).catch(err=>{
     toast('Error al guardar: '+err.message);
@@ -1331,14 +1319,41 @@ window.deleteProducto = function(key, nombre){
   remove(ref(db,'oc_productos/'+key)).then(()=>toast('Producto eliminado'));
 };
 
-// Cerrar dropdown de cliente al hacer clic fuera
-document.addEventListener('click', function(e){
-  const dd = document.getElementById('cliente-dropdown');
-  const inp = document.getElementById('oc-cliente-search');
-  if(dd && inp && !inp.contains(e.target) && !dd.contains(e.target)){
-    dd.classList.remove('open');
+// ─── BUSCADOR DE CLIENTE — binding único al cargar ───────
+(function initClienteSearch(){
+  const inp = document.getElementById('cliente-search');
+  const dd  = document.getElementById('cliente-dropdown');
+  if(!inp || !dd) return;
+
+  function showDD(q){
+    if(!q){ dd.classList.remove('open'); return; }
+    const matches = Object.entries(clientes)
+      .filter(([,c]) => c.empresa.toLowerCase().includes(q.toLowerCase()))
+      .sort((a,b) => a[1].empresa.localeCompare(b[1].empresa))
+      .slice(0, 25);
+    if(!matches.length){ dd.classList.remove('open'); return; }
+    dd.innerHTML = matches.map(([k,c]) =>
+      `<div class="cliente-dd-item" data-key="${k}">${c.empresa}</div>`
+    ).join('');
+    dd.classList.add('open');
+    dd.querySelectorAll('.cliente-dd-item').forEach(item => {
+      item.addEventListener('mousedown', e => { e.preventDefault(); selectCliente(item.dataset.key); });
+      item.addEventListener('touchstart', () => item.classList.add('pressing'), {passive:true});
+      item.addEventListener('touchend', () => { item.classList.remove('pressing'); selectCliente(item.dataset.key); });
+    });
   }
-});
+
+  let debounceTimer;
+  inp.addEventListener('input', function(){
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => showDD(this.value), 200);
+  });
+  inp.addEventListener('focus', function(){ if(this.value) showDD(this.value); });
+
+  document.addEventListener('click', function(e){
+    if(!inp.contains(e.target) && !dd.contains(e.target)) dd.classList.remove('open');
+  });
+})();
 
 // ─── INIT ────────────────────────────────────────────────
 initData();
