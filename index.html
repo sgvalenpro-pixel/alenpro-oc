@@ -155,6 +155,7 @@ html,body{height:100%;background:var(--bg2);font-family:-apple-system,BlinkMacSy
 
 @media print{
   body > *{ display:none!important }
+  button{ display:none!important }
   #print-area{
     display:block!important;
     position:fixed;inset:0;
@@ -392,7 +393,11 @@ function initData(){
   // Consecutivo OC — leer y reconciliar con histórico
   onValue(ref(db,'oc_config/ultimo_numero'), snap=>{
     const val = snap.exists() ? (snap.val()||0) : 0;
-    if(val > ultimoNumOC) ultimoNumOC = val;
+    if(val > ultimoNumOC){
+      ultimoNumOC = val;
+      const inp = document.getElementById('oc-num');
+      if(inp) inp.value = val + 1;
+    }
   });
   // Clientes
   onValue(ref(db,'oc_clientes'), snap=>{
@@ -403,7 +408,10 @@ function initData(){
   onValue(ref(db,'oc_productos'), snap=>{
     productos = snap.val() || {};
     if(currentTab==='productos') renderProductos();
-    if(currentTab==='oc') renderOC();
+    if(currentTab==='oc'){
+      if(document.getElementById('oc-num')) renderItems();
+      else renderOC();
+    }
   });
   // Historico — al cargar, reconciliar oc_config con el máximo real
   onValue(ref(db,'oc_historico'), snap=>{
@@ -711,7 +719,7 @@ function renderOC(preserveState=true){
   document.getElementById('content').innerHTML = `
     <div class="card">
       <div class="grid2">
-        <div class="field"><label>OC #</label><input id="oc-num" type="number" value="${getNextOC()}"></div>
+        <div class="field"><label>OC #</label><input id="oc-num" type="text" readonly value="${getNextOC()}"></div>
         <div class="field"><label>Fecha</label><input id="oc-fecha" type="date" value="${today()}"></div>
       </div>
       <div class="field"><label>Estado</label>
@@ -1334,7 +1342,6 @@ document.addEventListener('click', function(e){
 
 // ─── INIT ────────────────────────────────────────────────
 initData();
-setTimeout(()=>{ if(currentTab==='oc') renderOC(); }, 800);
 </script>
 </body>
 </html>
