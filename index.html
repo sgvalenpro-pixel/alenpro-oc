@@ -203,6 +203,26 @@ html,body{height:100%;background:var(--bg2);font-family:-apple-system,BlinkMacSy
     <input type="hidden" id="oc-cliente-key">
   </div>
 
+  <!-- Buscadores estáticos fuera de #content para evitar pérdida de foco al escribir -->
+  <div id="historico-search-card" style="display:none;padding:16px 16px 0">
+    <div class="search-wrap" style="margin-bottom:0">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="historico-search-input" class="search-input" placeholder="Buscar por OC#, cliente, producto..." autocomplete="off">
+    </div>
+  </div>
+  <div id="clientes-search-card" style="display:none;padding:16px 16px 0">
+    <div class="search-wrap" style="margin-bottom:0">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="clientes-search-input" class="search-input" placeholder="Buscar cliente..." autocomplete="off">
+    </div>
+  </div>
+  <div id="productos-search-card" style="display:none;padding:16px 16px 0">
+    <div class="search-wrap" style="margin-bottom:0">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="productos-search-input" class="search-input" placeholder="Buscar producto..." autocomplete="off">
+    </div>
+  </div>
+
   <div class="content" id="content">
     <div class="loading"><div class="spinner"></div>Conectando...</div>
   </div>
@@ -601,6 +621,12 @@ window.switchTab = function(tab){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   document.getElementById('oc-search-card').style.display = tab==='oc' ? 'block' : 'none';
+  document.getElementById('historico-search-card').style.display = tab==='historico' ? 'block' : 'none';
+  document.getElementById('clientes-search-card').style.display = tab==='clientes' ? 'block' : 'none';
+  document.getElementById('productos-search-card').style.display = tab==='productos' ? 'block' : 'none';
+  if(tab!=='historico') document.getElementById('historico-search-input').value='';
+  if(tab!=='clientes') document.getElementById('clientes-search-input').value='';
+  if(tab!=='productos') document.getElementById('productos-search-input').value='';
   if(tab==='oc') renderOC();
   else if(tab==='historico') renderHistorico();
   else if(tab==='clientes') renderClientes();
@@ -1076,7 +1102,7 @@ window.previewOC = function(){
 
 // ─── HISTORICO ───────────────────────────────────────────
 function renderHistorico(filter){
-  if(filter===undefined) filter = document.getElementById('hist-search')?.value||'';
+  if(filter===undefined) filter = document.getElementById('historico-search-input')?.value||'';
   const q = filter.toLowerCase().trim();
 
   // Cada entrada puede ser formato nuevo (con .items) o legado (fila plana)
@@ -1149,16 +1175,7 @@ function renderHistorico(filter){
   const html = list.length ? list.map(buildCard).join('') :
     `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>Sin resultados</p></div>`;
 
-  document.getElementById('content').innerHTML = `
-    <div class="search-wrap">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="hist-search" class="search-input" placeholder="Buscar por OC#, cliente, producto..." value="${filter}">
-    </div>
-    ${html}`;
-
-  // Bind buscador después de insertar en DOM
-  const searchEl = document.getElementById('hist-search');
-  if(searchEl) searchEl.addEventListener('input', function(){ renderHistorico(this.value); });
+  document.getElementById('content').innerHTML = html;
 }
 
 window.verOCHistorico = function(key){
@@ -1200,10 +1217,6 @@ function renderClientes(filter=''){
     </div>`).join('');
 
   document.getElementById('content').innerHTML = `
-    <div class="search-wrap">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input class="search-input" placeholder="Buscar cliente..." oninput="renderClientes(this.value)" value="${filter}">
-    </div>
     <button class="btn btn-primary btn-block" onclick="newCliente()">+ Nuevo cliente</button>
     ${html||'<div class="empty"><p>Sin resultados</p></div>'}`;
 }
@@ -1276,10 +1289,6 @@ function renderProductos(filter=''){
     </div>`).join('');
 
   document.getElementById('content').innerHTML = `
-    <div class="search-wrap">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input class="search-input" placeholder="Buscar producto..." oninput="renderProductos(this.value)" value="${filter}">
-    </div>
     <button class="btn btn-primary btn-block" onclick="newProducto()">+ Nuevo producto</button>
     ${html||'<div class="empty"><p>Sin resultados</p></div>'}`;
 }
@@ -1353,6 +1362,16 @@ window.deleteProducto = function(key, nombre){
   document.addEventListener('click', function(e){
     if(!inp.contains(e.target) && !dd.contains(e.target)) dd.classList.remove('open');
   });
+})();
+
+// ─── BUSCADORES DE TABS — binding único al cargar ────────
+(function initTabSearchBindings(){
+  const hInp = document.getElementById('historico-search-input');
+  if(hInp){ let t; hInp.addEventListener('input', function(){ clearTimeout(t); t=setTimeout(()=>renderHistorico(this.value),150); }); }
+  const cInp = document.getElementById('clientes-search-input');
+  if(cInp){ let t; cInp.addEventListener('input', function(){ clearTimeout(t); t=setTimeout(()=>renderClientes(this.value),150); }); }
+  const pInp = document.getElementById('productos-search-input');
+  if(pInp){ let t; pInp.addEventListener('input', function(){ clearTimeout(t); t=setTimeout(()=>renderProductos(this.value),150); }); }
 })();
 
 // ─── INIT ────────────────────────────────────────────────
