@@ -279,6 +279,7 @@ function defaultFormState(){
   };
 }
 let ocFormState = defaultFormState();
+let ultimoNumOC = 0;
 let currentTab = 'oc';
 let editingClienteKey = null;
 let editingProductoKey = null;
@@ -306,6 +307,10 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
 window.printOC = function(){
   const src = document.getElementById('preview-content');
   if(!src || !src.innerHTML.trim()){ toast('Abre la vista previa primero'); return; }
+
+  // Clonar y limpiar cualquier botón o control que no debe aparecer en el PDF
+  const clone = src.cloneNode(true);
+  clone.querySelectorAll('button, input, [class*="btn"]').forEach(el=>el.remove());
 
   // Abrir ventana nueva con el documento formateado para carta
   // Funciona igual en PC y móvil
@@ -344,11 +349,12 @@ window.printOC = function(){
   }
   @media print{
     body{ padding: 0; box-shadow: none; }
+    button, input, [class*="btn"]{ display: none !important; }
   }
 </style>
 </head>
 <body>
-${src.innerHTML}
+${clone.innerHTML}
 <script>
   window.onload = function(){
     // En móvil mostrar botón, en desktop imprimir automático
@@ -375,6 +381,10 @@ ${src.innerHTML}
 
 // ─── FIREBASE LOAD ───────────────────────────────────────
 function initData(){
+  // Consecutivo OC
+  onValue(ref(db,'oc_config/ultimo_numero'), snap=>{
+    if(snap.exists()) ultimoNumOC = snap.val()||0;
+  });
   // Clientes
   onValue(ref(db,'oc_clientes'), snap=>{
     clientes = snap.val() || {};
@@ -549,6 +559,11 @@ function seedHistorico(){
 
 // ─── NEXT OC NUMBER ──────────────────────────────────────
 function getNextOC(){
+  if(ultimoNumOC > 0){
+    const nums = Object.values(historico).map(h=>h.oc||0);
+    const maxHistorico = nums.length ? Math.max(...nums) : 0;
+    return Math.max(ultimoNumOC, maxHistorico) + 1;
+  }
   const nums = Object.values(historico).map(h=>h.oc||0);
   return nums.length ? Math.max(...nums)+1 : 504;
 }
@@ -889,6 +904,8 @@ window.guardarOC = function(){
 
   // Guardar en Firebase
   push(ref(db,'oc_historico'), ocData).then(()=>{
+    ultimoNumOC = ocNum;
+    set(ref(db,'oc_config/ultimo_numero'), ocNum);
     toast(`OC #${ocNum} guardada ✓`);
     // Mostrar vista previa para descargar PDF
     buildPreview(ocData);
