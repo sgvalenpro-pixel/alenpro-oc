@@ -381,9 +381,10 @@ ${clone.innerHTML}
 
 // ─── FIREBASE LOAD ───────────────────────────────────────
 function initData(){
-  // Consecutivo OC
+  // Consecutivo OC — leer y reconciliar con histórico
   onValue(ref(db,'oc_config/ultimo_numero'), snap=>{
-    if(snap.exists()) ultimoNumOC = snap.val()||0;
+    const val = snap.exists() ? (snap.val()||0) : 0;
+    if(val > ultimoNumOC) ultimoNumOC = val;
   });
   // Clientes
   onValue(ref(db,'oc_clientes'), snap=>{
@@ -397,10 +398,15 @@ function initData(){
     if(currentTab==='productos') renderProductos();
     if(currentTab==='oc') renderOC();
   });
-  // Historico
+  // Historico — al cargar, reconciliar oc_config con el máximo real
   onValue(ref(db,'oc_historico'), snap=>{
     historico = snap.val() || {};
     if(currentTab==='historico') renderHistorico();
+    const maxOC = Object.values(historico).reduce((m,h)=>Math.max(m,h.oc||0),0);
+    if(maxOC > ultimoNumOC){
+      ultimoNumOC = maxOC;
+      set(ref(db,'oc_config/ultimo_numero'), maxOC);
+    }
   });
   // Seed si vacío
   setTimeout(()=>{
