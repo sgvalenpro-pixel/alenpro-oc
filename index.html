@@ -351,6 +351,11 @@ window.printOC = function(){
   const clone = src.cloneNode(true);
   clone.querySelectorAll('button, input, [class*="btn"]').forEach(el=>el.remove());
 
+  // Nombre de archivo sugerido al guardar como PDF: OC-{numero}-{empresa}.pdf
+  const ocNum = src.dataset.ocNum||'';
+  const empName = (src.dataset.empresa||'').replace(/[\\/:*?"<>|]/g,'').trim();
+  const pdfTitle = `OC-${ocNum}-${empName}.pdf`;
+
   // Abrir ventana nueva con el documento formateado para carta
   // Funciona igual en PC y móvil
   const docHtml = `<!DOCTYPE html>
@@ -358,7 +363,7 @@ window.printOC = function(){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Orden de Compra</title>
+<title>${pdfTitle}</title>
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
   @page{
@@ -1070,6 +1075,9 @@ function buildPreview(d){
         310 395 20 58 · 311 521 45 88 · info@alenpro.co · comercial@alenpro.co
       </div>
     </div>`;
+  const pc = document.getElementById('preview-content');
+  pc.dataset.ocNum = d.oc||'';
+  pc.dataset.empresa = d.empresa||'';
 }
 
 window.previewOC = function(){
