@@ -76,6 +76,7 @@ html,body{height:100%;background:var(--bg2);font-family:-apple-system,BlinkMacSy
 .item-row input,.item-row select{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);width:100%}
 .item-prod{display:flex;flex-direction:column;gap:4px}
 .item-code{font-size:11px;color:var(--text3)}
+.item-prec-wrap{display:flex;flex-direction:column;gap:4px}
 
 /* TOTALS */
 .totals{background:var(--bg2);border-radius:var(--radius-sm);padding:12px;margin-top:4px}
@@ -97,6 +98,7 @@ html,body{height:100%;background:var(--bg2);font-family:-apple-system,BlinkMacSy
 .list-item-actions{display:flex;gap:4px;flex-shrink:0;margin-left:8px}
 .badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:100px;background:var(--bg3);color:var(--text2)}
 .badge-oc{background:#111;color:#f5c200;font-weight:700}
+.badge-especial{display:inline-block;font-size:9px;font-weight:700;padding:2px 5px;border-radius:6px;background:#f5c200;color:#1a1a1a;line-height:1.2;text-align:center}
 
 /* HIST ROW */
 .hist-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px}
@@ -191,6 +193,10 @@ html,body{height:100%;background:var(--bg2);font-family:-apple-system,BlinkMacSy
       <svg viewBox="0 0 24 24"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
       Productos
     </button>
+    <button class="nav-btn" onclick="switchTab('precios')" id="tab-precios">
+      <svg viewBox="0 0 24 24"><path d="M12.59 2.59a2 2 0 0 0-2.83 0L2.59 9.76a2 2 0 0 0 0 2.83l8.82 8.82a2 2 0 0 0 2.83 0l7.17-7.17a2 2 0 0 0 0-2.83z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      Precios Esp.
+    </button>
   </nav>
   <!-- Buscador de cliente — elemento estático fuera de #content para evitar pérdida de foco -->
   <div id="oc-search-card" class="card" style="display:none">
@@ -220,6 +226,12 @@ html,body{height:100%;background:var(--bg2);font-family:-apple-system,BlinkMacSy
     <div class="search-wrap" style="margin-bottom:0">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="productos-search-input" class="search-input" placeholder="Buscar producto..." autocomplete="off">
+    </div>
+  </div>
+  <div id="precios-search-card" style="display:none;padding:16px 16px 0">
+    <div class="search-wrap" style="margin-bottom:0">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="precios-search-input" class="search-input" placeholder="Buscar por cliente o producto..." autocomplete="off">
     </div>
   </div>
 
@@ -306,6 +318,7 @@ const db = getDatabase(app);
 let clientes = {};
 let productos = {};
 let historico = {};
+let preciosEspeciales = {};
 let ocItems = [];
 function defaultFormState(){
   return {
@@ -458,6 +471,11 @@ function initData(){
       set(ref(db,'oc_config/ultimo_numero'), maxOC);
     }
   });
+  // Precios especiales por cliente+producto
+  onValue(ref(db,'oc_precios_especiales'), snap=>{
+    preciosEspeciales = snap.val() || {};
+    if(currentTab==='precios') renderPrecios();
+  });
   // Seed si vacío
   setTimeout(()=>{
     get(ref(db,'oc_clientes')).then(s=>{
@@ -470,6 +488,13 @@ function initData(){
       if(!s.exists()) seedHistorico();
     });
   }, 1000);
+}
+
+// ─── PRECIOS ESPECIALES: lookup helper ───────────────────
+function getPrecioEspecial(clienteKey, prodKey){
+  if(!clienteKey || !prodKey) return null;
+  const v = (preciosEspeciales[clienteKey]||{})[prodKey];
+  return (v===undefined || v===null) ? null : v;
 }
 
 // ─── SEED DATA ───────────────────────────────────────────
@@ -629,13 +654,16 @@ window.switchTab = function(tab){
   document.getElementById('historico-search-card').style.display = tab==='historico' ? 'block' : 'none';
   document.getElementById('clientes-search-card').style.display = tab==='clientes' ? 'block' : 'none';
   document.getElementById('productos-search-card').style.display = tab==='productos' ? 'block' : 'none';
+  document.getElementById('precios-search-card').style.display = tab==='precios' ? 'block' : 'none';
   if(tab!=='historico') document.getElementById('historico-search-input').value='';
   if(tab!=='clientes') document.getElementById('clientes-search-input').value='';
   if(tab!=='productos') document.getElementById('productos-search-input').value='';
+  if(tab!=='precios') document.getElementById('precios-search-input').value='';
   if(tab==='oc') renderOC();
   else if(tab==='historico') renderHistorico();
   else if(tab==='clientes') renderClientes();
   else if(tab==='productos') renderProductos();
+  else if(tab==='precios') renderPrecios();
 };
 
 // ─── OC PANEL ────────────────────────────────────────────
@@ -653,7 +681,10 @@ function buildItemsHTML(){
         <div class="item-code" id="item-code-${i}">${it.codigo||''}</div>
       </div>
       <input id="item-cant-${i}" type="number" min="0" placeholder="Cant." value="${it.cantidad||''}">
-      <input id="item-prec-${i}" type="number" min="0" placeholder="Precio" value="${it.precio||''}">
+      <div class="item-prec-wrap">
+        <input id="item-prec-${i}" type="number" min="0" placeholder="Precio" value="${it.precio||''}">
+        <span class="badge-especial" id="item-badge-${i}" style="display:${it.esEspecial?'inline-block':'none'}">Precio especial</span>
+      </div>
       <button class="btn-danger btn" id="item-del-${i}">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
       </button>
@@ -844,7 +875,24 @@ window.selectCliente = function(key){
   document.getElementById('c-tel').value = c.tel||'';
   document.getElementById('c-email').value = c.email||'';
   document.getElementById('oc-solicitante').value = c.empresa;
+  recalcPreciosItems(key);
 };
+
+// Recalcula el precio de las líneas ya agregadas según el precio especial
+// del nuevo cliente (o el de lista si no tiene)
+function recalcPreciosItems(clienteKey){
+  let changed = false;
+  ocItems.forEach(it=>{
+    if(!it.prodKey) return;
+    const p = productos[it.prodKey];
+    const especial = getPrecioEspecial(clienteKey, it.prodKey);
+    const nuevoPrecio = especial!==null ? especial : (p?.precio||0);
+    it.precio = nuevoPrecio;
+    it.esEspecial = especial!==null;
+    changed = true;
+  });
+  if(changed) renderItems();
+}
 
 window.copiarEnvio = function(){
   document.getElementById('e-empresa').value = document.getElementById('cliente-search')?.value||'';
@@ -860,17 +908,24 @@ function bindItemEvents(){
     const inpPrec = document.getElementById('item-prec-'+i);
     const btnDel  = document.getElementById('item-del-'+i);
     const codeDiv = document.getElementById('item-code-'+i);
+    const badge   = document.getElementById('item-badge-'+i);
 
     if(selProd) selProd.addEventListener('change', function(){
       const key = this.value;
       const p = productos[key];
       if(p){
+        const clienteKey = document.getElementById('oc-cliente-key')?.value||'';
+        const especial = getPrecioEspecial(clienteKey, key);
+        const precio = especial!==null ? especial : (p.precio||0);
         ocItems[i].prodKey=key; ocItems[i].codigo=p.codigo;
-        ocItems[i].articulo=p.articulo; ocItems[i].precio=p.precio||0;
-        if(inpPrec) inpPrec.value = p.precio||'';
+        ocItems[i].articulo=p.articulo; ocItems[i].precio=precio;
+        ocItems[i].esEspecial = especial!==null;
+        if(inpPrec) inpPrec.value = precio||'';
         if(codeDiv) codeDiv.textContent = p.codigo||'';
+        if(badge) badge.style.display = especial!==null ? 'inline-block' : 'none';
       } else {
-        ocItems[i].prodKey=''; ocItems[i].codigo=''; ocItems[i].articulo='';
+        ocItems[i].prodKey=''; ocItems[i].codigo=''; ocItems[i].articulo=''; ocItems[i].esEspecial=false;
+        if(badge) badge.style.display = 'none';
       }
       calcTotals();
     });
@@ -882,6 +937,8 @@ function bindItemEvents(){
 
     if(inpPrec) inpPrec.addEventListener('input', function(){
       ocItems[i].precio = parseFloat(this.value)||0;
+      ocItems[i].esEspecial = false;
+      if(badge) badge.style.display = 'none';
       calcTotals();
     });
 
@@ -1336,6 +1393,117 @@ window.deleteProducto = function(key, nombre){
   remove(ref(db,'oc_productos/'+key)).then(()=>toast('Producto eliminado'));
 };
 
+// ─── PRECIOS ESPECIALES ──────────────────────────────────
+function renderPrecios(filter=''){
+  const q = filter.toLowerCase().trim();
+
+  const rows = [];
+  Object.entries(preciosEspeciales).forEach(([ck, prodMap])=>{
+    Object.entries(prodMap||{}).forEach(([pk, precio])=>{
+      rows.push({
+        clienteKey: ck, prodKey: pk, precio,
+        clienteNombre: clientes[ck]?.empresa || '(cliente eliminado)',
+        productoNombre: productos[pk]?.articulo || '(producto eliminado)',
+        productoCodigo: productos[pk]?.codigo || ''
+      });
+    });
+  });
+
+  let list = rows;
+  if(q){
+    list = list.filter(r => (r.clienteNombre+' '+r.productoNombre+' '+r.productoCodigo).toLowerCase().includes(q));
+  }
+  list.sort((a,b)=> a.clienteNombre.localeCompare(b.clienteNombre) || a.productoNombre.localeCompare(b.productoNombre));
+
+  const clienteOptions = Object.entries(clientes)
+    .sort((a,b)=>a[1].empresa.localeCompare(b[1].empresa))
+    .map(([k,c])=>`<option value="${k}">${c.empresa}</option>`).join('');
+  const productoOptions = Object.entries(productos)
+    .sort((a,b)=>a[1].articulo.localeCompare(b[1].articulo))
+    .map(([k,p])=>`<option value="${k}">${p.articulo} (${p.codigo})</option>`).join('');
+
+  const listHtml = list.map(r=>`
+    <div class="list-item">
+      <div class="list-item-main">
+        <div class="list-item-name">${r.clienteNombre}</div>
+        <div class="list-item-sub">${r.productoNombre} ${r.productoCodigo?'<span class="badge">'+r.productoCodigo+'</span> ':''}· ${fmt(r.precio)}</div>
+      </div>
+      <div class="list-item-actions">
+        <button class="btn btn-icon" onclick="editPrecioEspecial('${r.clienteKey}','${r.prodKey}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn btn-icon" style="color:var(--danger)" onclick="deletePrecioEspecial('${r.clienteKey}','${r.prodKey}','${r.clienteNombre.replace(/'/g,"\\'")}','${r.productoNombre.replace(/'/g,"\\'")}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+        </button>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="card">
+      <div class="card-title" id="pe-form-title">Nuevo precio especial</div>
+      <input type="hidden" id="pe-orig-cliente">
+      <input type="hidden" id="pe-orig-producto">
+      <div class="field"><label>Cliente</label>
+        <select id="pe-cliente"><option value="">— Cliente —</option>${clienteOptions}</select>
+      </div>
+      <div class="field"><label>Producto</label>
+        <select id="pe-producto"><option value="">— Producto —</option>${productoOptions}</select>
+      </div>
+      <div class="field"><label>Precio especial (COP)</label><input id="pe-precio" type="number" min="0" placeholder="0"></div>
+      <div class="btn-row">
+        <button class="btn" id="pe-cancel-btn" style="display:none" onclick="cancelEditPrecioEspecial()">Cancelar</button>
+        <button class="btn btn-primary" style="flex:2" onclick="savePrecioEspecial()">Guardar precio especial</button>
+      </div>
+    </div>
+    <div class="card-title" style="padding:0 2px 4px">Precios configurados</div>
+    ${listHtml || '<div class="empty"><p>Sin precios especiales configurados</p></div>'}`;
+}
+window.renderPrecios = renderPrecios;
+
+window.editPrecioEspecial = function(clienteKey, prodKey){
+  document.getElementById('pe-form-title').textContent = 'Editar precio especial';
+  document.getElementById('pe-orig-cliente').value = clienteKey;
+  document.getElementById('pe-orig-producto').value = prodKey;
+  document.getElementById('pe-cliente').value = clienteKey;
+  document.getElementById('pe-producto').value = prodKey;
+  document.getElementById('pe-precio').value = (preciosEspeciales[clienteKey]||{})[prodKey] ?? '';
+  document.getElementById('pe-cancel-btn').style.display = 'block';
+  window.scrollTo({top:0, behavior:'smooth'});
+};
+
+window.cancelEditPrecioEspecial = function(){
+  renderPrecios();
+};
+
+window.savePrecioEspecial = function(){
+  const clienteKey = document.getElementById('pe-cliente').value;
+  const prodKey = document.getElementById('pe-producto').value;
+  const precio = parseFloat(document.getElementById('pe-precio').value);
+  if(!clienteKey || !prodKey){ toast('Selecciona cliente y producto'); return; }
+  if(!precio || precio<=0){ toast('Ingresa un precio válido'); return; }
+
+  const origCliente = document.getElementById('pe-orig-cliente').value;
+  const origProducto = document.getElementById('pe-orig-producto').value;
+  const isEdit = !!(origCliente && origProducto);
+
+  const writes = [];
+  // Si al editar cambió el cliente o el producto, eliminar el registro original
+  if(isEdit && (origCliente!==clienteKey || origProducto!==prodKey)){
+    writes.push(remove(ref(db,`oc_precios_especiales/${origCliente}/${origProducto}`)));
+  }
+  writes.push(set(ref(db,`oc_precios_especiales/${clienteKey}/${prodKey}`), precio));
+
+  Promise.all(writes).then(()=>{
+    toast(isEdit?'Precio especial actualizado':'Precio especial agregado');
+    renderPrecios();
+  });
+};
+
+window.deletePrecioEspecial = function(clienteKey, prodKey, clienteNombre, productoNombre){
+  if(!confirm(`¿Eliminar el precio especial de "${productoNombre}" para "${clienteNombre}"?`)) return;
+  remove(ref(db,`oc_precios_especiales/${clienteKey}/${prodKey}`)).then(()=>toast('Precio especial eliminado'));
+};
+
 // ─── BUSCADOR DE CLIENTE — binding único al cargar ───────
 (function initClienteSearch(){
   const inp = document.getElementById('cliente-search');
@@ -1380,6 +1548,8 @@ window.deleteProducto = function(key, nombre){
   if(cInp){ let t; cInp.addEventListener('input', function(){ clearTimeout(t); t=setTimeout(()=>renderClientes(this.value),150); }); }
   const pInp = document.getElementById('productos-search-input');
   if(pInp){ let t; pInp.addEventListener('input', function(){ clearTimeout(t); t=setTimeout(()=>renderProductos(this.value),150); }); }
+  const peInp = document.getElementById('precios-search-input');
+  if(peInp){ let t; peInp.addEventListener('input', function(){ clearTimeout(t); t=setTimeout(()=>renderPrecios(this.value),150); }); }
 })();
 
 // ─── INIT ────────────────────────────────────────────────
