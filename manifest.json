@@ -1,5 +1,5 @@
 {
-  "name": "Generador OC - ALEN+PRO",
+  "name": "OC ALEN+PRO",
   "short_name": "OC ALEN+PRO",
   "description": "Generador de Órdenes de Compra ALEN+PRO",
   "start_url": "/alenpro-oc/",
@@ -7,15 +7,15 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
-  "theme_color": "#1a1a1a",
+  "theme_color": "#F5C200",
   "icons": [
     {
-      "src": "https://via.placeholder.com/192x192/1a1a1a/ffffff?text=OC",
+      "src": "logo.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://via.placeholder.com/512x512/1a1a1a/ffffff?text=OC",
+      "src": "logo.png",
       "sizes": "512x512",
       "type": "image/png"
     }
