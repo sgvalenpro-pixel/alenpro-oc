@@ -335,6 +335,7 @@ let ultimoNumOC = 0;
 let currentTab = 'oc';
 let editingClienteKey = null;
 let editingProductoKey = null;
+let editingOCKey = null;
 
 // ─── HELPERS ─────────────────────────────────────────────
 const fmt = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}).format(n||0);
@@ -764,6 +765,11 @@ function restoreFormState(){
 function renderOC(preserveState=true){
   if(preserveState) saveFormState();
   document.getElementById('content').innerHTML = `
+    ${editingOCKey ? `
+    <div style="background:#fef9c3;border:1px solid #f5c200;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;font-weight:600;color:#7a5b00;display:flex;justify-content:space-between;align-items:center">
+      <span>✎ Editando OC #${ocFormState.ocNum}</span>
+      <button type="button" style="background:transparent;border:none;color:#7a5b00;text-decoration:underline;padding:0;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="limpiarOC()">Cancelar</button>
+    </div>` : ''}
     <div class="card">
       <div class="grid2">
         <div class="field"><label>OC #</label><input id="oc-num" type="text" readonly value="${getNextOC()}"></div>
@@ -842,7 +848,7 @@ function renderOC(preserveState=true){
     <div class="btn-row" style="margin-bottom:24px">
       <button class="btn" onclick="limpiarOC()">Nueva</button>
       <button class="btn" onclick="previewOC()">Vista previa</button>
-      <button class="btn btn-primary" onclick="guardarOC()">Guardar OC</button>
+      <button class="btn btn-primary" onclick="guardarOC()">${editingOCKey ? 'Actualizar OC' : 'Guardar OC'}</button>
     </div>`;
 
   document.getElementById('oc-search-card').style.display = 'block';
@@ -980,6 +986,7 @@ function calcTotals(){
 }
 
 window.limpiarOC = function(){
+  editingOCKey = null;
   ocItems = [];
   ocFormState = defaultFormState();
   const si = document.getElementById('cliente-search'); if(si) si.value = '';
@@ -1022,7 +1029,28 @@ window.guardarOC = function(){
     items: validItems.map(it=>({codigo:it.codigo||'', articulo:it.articulo, cantidad:it.cantidad, precio:it.precio||0}))
   };
 
-  // Guardar en Firebase
+  // Modo edición: actualizar el registro existente (mismo key, sin tocar el consecutivo)
+  if(editingOCKey){
+    const ocKey = editingOCKey;
+    set(ref(db,'oc_historico/'+ocKey), ocData).then(()=>{
+      toast(`OC #${ocNum} actualizada ✓`);
+      buildPreview(ocData);
+      openModal('modal-preview');
+      editingOCKey = null;
+      ocItems = [];
+      ocFormState = defaultFormState();
+      const si = document.getElementById('cliente-search'); if(si) si.value = '';
+      const ki = document.getElementById('oc-cliente-key'); if(ki) ki.value = '';
+      const dd2 = document.getElementById('cliente-dropdown'); if(dd2) dd2.classList.remove('open');
+      setTimeout(()=>renderOC(false), 300);
+    }).catch(err=>{
+      toast('Error al actualizar: '+err.message);
+      console.error(err);
+    });
+    return;
+  }
+
+  // Guardar en Firebase (OC nueva)
   push(ref(db,'oc_historico'), ocData).then(()=>{
     ultimoNumOC = ocNum;
     set(ref(db,'oc_config/ultimo_numero'), ocNum);
@@ -1234,6 +1262,9 @@ function renderHistorico(filter){
         <div class="hist-empresa">${g.empresa||'—'}</div>
         <div style="margin-top:4px">${itemLines}</div>
         ${g.estado?`<div style="margin-top:6px"><span class="badge" style="background:#eff6ff;color:#1d4ed8">${g.estado}</span></div>`:''}
+        <div style="margin-top:8px;text-align:right">
+          <button class="btn btn-sm" onclick="event.stopPropagation();editarOCHistorico('${g.key}')">Editar</button>
+        </div>
       </div>`;
   };
 
@@ -1254,6 +1285,86 @@ window.verOCHistorico = function(key){
   }
   buildPreview(h);
   openModal('modal-preview');
+};
+
+// Encuentra la key de producto que corresponde a un item guardado (por código o nombre)
+function findProdKeyByItem(it){
+  const entries = Object.entries(productos);
+  let found = it.codigo ? entries.find(([k,p])=>p.codigo===it.codigo) : null;
+  if(!found) found = entries.find(([k,p])=>p.articulo===it.articulo);
+  return found ? found[0] : '';
+}
+
+// Carga una OC del histórico en el formulario de Nueva OC para editarla
+window.editarOCHistorico = function(key){
+  const h = historico[key];
+  if(!h) return;
+  let data = h;
+  if(!data.items || !Array.isArray(data.items)){
+    data = { ...data, items:[{codigo:'', articulo:data.producto||'', cantidad:data.cantidad||0, precio:data.precio||0}] };
+  }
+
+  const cliData = data.cliente||{};
+  const envData = data.enviarA||{};
+
+  let foundClienteKey = '';
+  if(cliData.nit){
+    const m = Object.entries(clientes).find(([k,c])=>c.nit && c.nit===cliData.nit);
+    if(m) foundClienteKey = m[0];
+  }
+  if(!foundClienteKey && data.empresa){
+    const m = Object.entries(clientes).find(([k,c])=>(c.empresa||'').trim().toLowerCase()===(data.empresa||'').trim().toLowerCase());
+    if(m) foundClienteKey = m[0];
+  }
+
+  ocItems = (data.items||[]).map(it=>{
+    const prodKey = findProdKeyByItem(it);
+    const especial = prodKey ? getPrecioEspecial(foundClienteKey, prodKey) : null;
+    return {
+      prodKey, codigo: it.codigo||'', articulo: it.articulo||'',
+      cantidad: it.cantidad||0, precio: it.precio||0,
+      esEspecial: especial!==null && especial===it.precio
+    };
+  });
+
+  ocFormState = {
+    ocNum: String(data.oc||''),
+    fecha: data.fecha||today(),
+    estado: data.estado||'PRO-FORMA',
+    clienteKey: foundClienteKey,
+    empresaNombre: data.empresa||'',
+    cliente: { nit:cliData.nit||'', ciudad:cliData.ciudad||'', dir:cliData.dir||'', tel:cliData.tel||'', email:cliData.email||'' },
+    enviarA: { empresa:envData.empresa||'', ciudad:envData.ciudad||'', dir:envData.dir||'', nit:envData.nit||'' },
+    solicitante: data.solicitante||'',
+    pago: data.pago||'CONTADO',
+    envio: data.envio||'RECOGE CLIENTE.',
+    comentarios: data.comentarios||'',
+    autorizado: data.autorizado||'SAMUEL GUTIERREZ V'
+  };
+
+  editingOCKey = key;
+
+  // Cambiar a la pestaña Nueva OC sin pasar por saveFormState() (sobreescribiría
+  // clienteKey/empresaNombre con lo que haya en los inputs estáticos actuales)
+  currentTab = 'oc';
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-oc').classList.add('active');
+  document.getElementById('oc-search-card').style.display = 'block';
+  document.getElementById('historico-search-card').style.display = 'none';
+  document.getElementById('clientes-search-card').style.display = 'none';
+  document.getElementById('productos-search-card').style.display = 'none';
+  document.getElementById('precios-search-card').style.display = 'none';
+  document.getElementById('historico-search-input').value = '';
+
+  // Asegurar que no quede un clienteKey/empresa obsoleto de una sesión previa
+  const keyInpEl = document.getElementById('oc-cliente-key');
+  const searchInpEl = document.getElementById('cliente-search');
+  if(keyInpEl) keyInpEl.value = foundClienteKey;
+  if(searchInpEl) searchInpEl.value = data.empresa||'';
+
+  renderOC(false);
+
+  if(!foundClienteKey) toast('Cliente no encontrado en la lista — selecciónalo de nuevo para poder actualizar');
 };
 
 window.renderHistorico = renderHistorico;
