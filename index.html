@@ -345,6 +345,12 @@ let editingOCKey = null;
 const fmt = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}).format(n||0);
 const fmtNum = n => new Intl.NumberFormat('es-CO').format(n||0);
 const today = () => new Date().toISOString().split('T')[0];
+const ESTADO_COLORS = {
+  'PRO-FORMA': {bg:'#eff6ff', color:'#1d4ed8'},
+  'CONFIRMADA': {bg:'#f0fdf4', color:'#16a34a'},
+  'COTIZACIÓN': {bg:'#f5f3ff', color:'#6d28d9'},
+};
+const estadoBadgeStyle = estado => ESTADO_COLORS[estado] || ESTADO_COLORS['PRO-FORMA'];
 
 function toast(msg, dur=2200){
   const t=document.getElementById('toast');
@@ -781,7 +787,7 @@ function renderOC(preserveState=true){
       </div>
       <div class="field"><label>Estado</label>
         <select id="oc-estado">
-          <option>PRO-FORMA</option><option>CONFIRMADA</option><option>DESPACHADA</option>
+          <option>PRO-FORMA</option><option>COTIZACIÓN</option><option>CONFIRMADA</option><option>DESPACHADA</option>
         </select>
       </div>
     </div>
@@ -1082,6 +1088,8 @@ function buildPreview(d){
   let sub=0;
   items.forEach(it=>{ sub+=(it.cantidad||0)*(it.precio||0); });
   const iva = sub*0.05;
+  const estadoEstilo = estadoBadgeStyle(d.estado||'PRO-FORMA');
+  const docTitulo = (d.estado||'PRO-FORMA')==='COTIZACIÓN' ? 'COTIZACIÓN' : 'ORDEN DE PEDIDO';
   const rows = items.map(it=>`
     <tr>
       <td style="padding:5px 4px;border-bottom:1px solid #eee">${it.codigo||''}</td>
@@ -1104,10 +1112,10 @@ function buildPreview(d){
             <div style="font-size:10px;color:#666">Puerto Caldas, Paraje La Marina - Cra 4 #23-02, Pereira</div>
           </div>
           <div style="text-align:right">
-            <div style="font-size:13px;font-weight:600">ORDEN DE PEDIDO</div>
+            <div style="font-size:13px;font-weight:600">${docTitulo}</div>
             <div style="font-size:18px;font-weight:700;color:#1d4ed8">OC# ${d.oc}</div>
             <div style="font-size:11px;color:#666">${d.fecha||''}</div>
-            <div style="display:inline-block;background:#eff6ff;color:#1d4ed8;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;margin-top:2px">${d.estado||'PRO-FORMA'}</div>
+            <div style="display:inline-block;background:${estadoEstilo.bg};color:${estadoEstilo.color};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;margin-top:2px">${d.estado||'PRO-FORMA'}</div>
           </div>
         </div>
       </div>
@@ -1271,7 +1279,7 @@ function renderHistorico(filter){
         </div>
         <div class="hist-empresa">${g.empresa||'—'}</div>
         <div style="margin-top:4px">${itemLines}</div>
-        ${g.estado?`<div style="margin-top:6px"><span class="badge" style="background:#eff6ff;color:#1d4ed8">${g.estado}</span></div>`:''}
+        ${g.estado?`<div style="margin-top:6px"><span class="badge" style="background:${estadoBadgeStyle(g.estado).bg};color:${estadoBadgeStyle(g.estado).color}">${g.estado}</span></div>`:''}
         <div style="margin-top:8px;text-align:right">
           <button class="btn btn-sm" onclick="event.stopPropagation();editarOCHistorico('${g.key}')">Editar</button>
         </div>
