@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="OC ALEN+PRO">
 <title>OC ALEN+PRO</title>
 <link rel="manifest" href="manifest.json">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -211,9 +212,12 @@ html,body{height:100%;background:var(--bg2);font-family:-apple-system,BlinkMacSy
 
   <!-- Buscadores estáticos fuera de #content para evitar pérdida de foco al escribir -->
   <div id="historico-search-card" style="display:none;padding:16px 16px 0">
-    <div class="search-wrap" style="margin-bottom:0">
+    <div class="search-wrap">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="historico-search-input" class="search-input" placeholder="Buscar por OC#, cliente, producto..." autocomplete="off">
+    </div>
+    <div style="text-align:right;margin-bottom:12px">
+      <button class="btn btn-primary btn-sm" onclick="descargarExcelHistorico()">📥 Descargar Excel</button>
     </div>
   </div>
   <div id="clientes-search-card" style="display:none;padding:16px 16px 0">
@@ -1194,10 +1198,9 @@ window.previewOC = function(){
 };
 
 // ─── HISTORICO ───────────────────────────────────────────
-function renderHistorico(filter){
-  if(filter===undefined) filter = document.getElementById('historico-search-input')?.value||'';
-  const q = filter.toLowerCase().trim();
-
+// Normaliza y agrupa el histórico (formato nuevo con .items o legado) por número de OC,
+// ordenado de mayor a menor número de OC. Usado por renderHistorico y la exportación a Excel.
+function getHistoricoGrouped(){
   // Cada entrada puede ser formato nuevo (con .items) o legado (fila plana)
   const entries = Object.entries(historico).map(([k,h])=>({...h,key:k}));
 
@@ -1230,7 +1233,14 @@ function renderHistorico(filter){
     }
   });
 
-  let list = Object.values(grouped).sort((a,b)=>(b.oc||0)-(a.oc||0));
+  return Object.values(grouped).sort((a,b)=>(b.oc||0)-(a.oc||0));
+}
+
+function renderHistorico(filter){
+  if(filter===undefined) filter = document.getElementById('historico-search-input')?.value||'';
+  const q = filter.toLowerCase().trim();
+
+  let list = getHistoricoGrouped();
 
   // Filtrar
   if(q){
@@ -1273,6 +1283,58 @@ function renderHistorico(filter){
 
   document.getElementById('content').innerHTML = html;
 }
+
+window.descargarExcelHistorico = function(){
+  if(typeof XLSX === 'undefined'){ toast('No se pudo cargar el generador de Excel'); return; }
+  const list = getHistoricoGrouped();
+  if(!list.length){ toast('No hay registros en el histórico'); return; }
+
+  const headers = ['# OC','FECHA','ESTADO','EMPRESA/CLIENTE','NIT','CIUDAD','PAGO','ENVÍO','PRODUCTOS','SUBTOTAL SIN IVA','IVA','TOTAL','COMENTARIOS','AUTORIZADO POR'];
+
+  const rows = list.map(g=>{
+    let sub = 0;
+    (g.items||[]).forEach(it=>{ sub += (it.cantidad||0)*(it.precio||0); });
+    const iva = sub*0.05;
+    const productos = (g.items||[]).map(it=>
+      `${it.articulo||'—'}${it.codigo?' ('+it.codigo+')':''} - ${fmtNum(it.cantidad)} x ${fmt(it.precio)}`
+    ).join('\n');
+    return [
+      g.oc||'', g.fecha||'', g.estado||'', g.empresa||'',
+      (g.cliente&&g.cliente.nit)||'', (g.cliente&&g.cliente.ciudad)||'',
+      g.pago||'', g.envio||'', productos,
+      Math.round(sub), Math.round(iva), Math.round(sub+iva),
+      g.comentarios||'', g.autorizado||''
+    ];
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+  const headerStyle = {
+    fill:{ fgColor:{ rgb:'111111' } },
+    font:{ bold:true, color:{ rgb:'F5C200' } },
+    alignment:{ vertical:'center', horizontal:'center', wrapText:true }
+  };
+  headers.forEach((_,c)=>{
+    const cellRef = XLSX.utils.encode_cell({r:0,c});
+    if(ws[cellRef]) ws[cellRef].s = headerStyle;
+  });
+  for(let r=1;r<=rows.length;r++){
+    const prodRef = XLSX.utils.encode_cell({r,c:8});
+    if(ws[prodRef]) ws[prodRef].s = { alignment:{ wrapText:true, vertical:'top' } };
+  }
+
+  ws['!cols'] = [
+    {wch:8},{wch:12},{wch:14},{wch:26},{wch:16},{wch:14},
+    {wch:12},{wch:12},{wch:40},{wch:16},{wch:12},{wch:16},
+    {wch:24},{wch:20}
+  ];
+  ws['!rows'] = [{hpt:22}];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Histórico OC');
+  XLSX.writeFile(wb, 'OC_ALENPRO_Historico.xlsx');
+  toast('Excel generado ✓');
+};
 
 window.verOCHistorico = function(key){
   // Buscar la OC en el histórico y mostrar preview
